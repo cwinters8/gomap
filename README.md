@@ -1,2 +1,5 @@
 # gomap
-Go package for interfacing with JMAP servers
+
+Go module for interfacing with JMAP servers
+
+## 🚧 under construction 🚧
