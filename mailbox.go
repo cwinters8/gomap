@@ -25,7 +25,7 @@ func (m *Mailbox) Query() error {
 	if len(m.Name) < 1 {
 		return fmt.Errorf("m.Name must be non-empty")
 	}
-	var args Query
+	var args MailboxQuery
 	args.AccountID = m.client.Session.PrimaryAccounts.Mail
 	args.Filter.Name = m.Name
 	b, err := json.Marshal(args)
