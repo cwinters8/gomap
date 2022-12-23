@@ -3,46 +3,34 @@ package gomap
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
+	"github.com/cwinters8/gomap/arguments"
 )
 
-// implementations of Arguments should include appropriate json tags
-type Arguments interface {
-	*MailboxQuery
-	GetMethod() Method
+type Invocation[A arguments.Args] struct {
+	ID     string
+	Method *Method[A]
 }
 
-type Invocation[A Arguments] struct {
-	ID     string
-	Method Method
+type Method[A arguments.Args] struct {
+	Prefix string
 	Args   A
 }
 
-type MailboxQuery struct {
-	AccountID string `json:"accountId"`
-	Filter    Filter `json:"filter"`
+func (m Method[A]) Name() string {
+	return fmt.Sprintf("%s/query", m.Prefix)
 }
-
-func (mq *MailboxQuery) GetMethod() Method {
-	return "Mailbox/query"
-}
-
-type Filter struct {
-	Name string `json:"name"`
-}
-
-type Method string
-
-// these constants are mainly here for reference
-const (
-	GetMailbox         Method = "Mailbox/get"
-	SetEmail           Method = "Email/set"
-	SetEmailSubmission Method = "EmailSubmission/set"
-)
 
 func (i Invocation[A]) MarshalJSON() ([]byte, error) {
 	raw := []any{
-		i.Method,
-		i.Args,
+		// method
+		i.Method.Name(),
+
+		// args
+		i.Method.Args,
+
+		// id
 		i.ID,
 	}
 	return json.Marshal(raw)
@@ -57,7 +45,6 @@ func (i *Invocation[A]) UnmarshalJSON(b []byte) error {
 	if !ok {
 		return fmt.Errorf("failed to coerce method to string")
 	}
-	i.Method = Method(method)
 	args, err := json.Marshal(raw[1])
 	if err != nil {
 		return fmt.Errorf("failed to marshal raw args back to json: %w", err)
@@ -66,7 +53,11 @@ func (i *Invocation[A]) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(args, &a); err != nil {
 		return fmt.Errorf("failed to unmarshal args: %w", err)
 	}
-	i.Args = a
+	m := Method[A]{
+		Prefix: strings.Split(method, "/")[0],
+		Args:   a,
+	}
+	i.Method = &m
 	id, ok := raw[2].(string)
 	if !ok {
 		return fmt.Errorf("failed to coerce id to string")

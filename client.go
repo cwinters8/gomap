@@ -20,7 +20,7 @@ func NewClient(sessionURL string, bearerToken string) (*Client, error) {
 		HTTPClient: http.DefaultClient,
 	}
 	// get session
-	status, body, err := c.makeRequest(http.MethodGet, sessionURL, nil)
+	status, body, err := c.httpRequest(http.MethodGet, sessionURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("request status %d\nfailed to make session request: %w", status, err)
 	}
@@ -46,7 +46,7 @@ type Accounts struct {
 	Submission string `json:"urn:ietf:params:jmap:submission"`
 }
 
-func (c *Client) makeRequest(method string, url string, body []byte) (int, []byte, error) {
+func (c *Client) httpRequest(method string, url string, body []byte) (int, []byte, error) {
 	var (
 		req *http.Request
 		err error
