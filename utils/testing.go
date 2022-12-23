@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"testing"
+
+	"github.com/joho/godotenv"
 )
 
 // logs a formatted string, then fails the test immediately
@@ -15,5 +17,13 @@ func Failf(t *testing.T, format string, args ...any) {
 func Checkf(t *testing.T, b bool, format string, args ...any) {
 	if b {
 		t.Errorf(format, args...)
+	}
+}
+
+// load env variables from .env
+func Env(t *testing.T) {
+	if err := godotenv.Load(); err != nil {
+		t.Logf("failed to load .env: %s", err.Error())
+		t.FailNow()
 	}
 }

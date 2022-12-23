@@ -16,10 +16,17 @@ type Invocation[A arguments.Args] struct {
 type Method[A arguments.Args] struct {
 	Prefix string
 	Args   A
+	Err    *Error
 }
 
 func (m Method[A]) Name() string {
 	return fmt.Sprintf("%s/query", m.Prefix)
+}
+
+type Error struct {
+	Type        string   `json:"type"`
+	Properties  []string `json:"properties"`
+	MoreDetails map[string]any
 }
 
 func (i Invocation[A]) MarshalJSON() ([]byte, error) {
@@ -49,13 +56,21 @@ func (i *Invocation[A]) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal raw args back to json: %w", err)
 	}
-	var a A
-	if err := json.Unmarshal(args, &a); err != nil {
-		return fmt.Errorf("failed to unmarshal args: %w", err)
-	}
 	m := Method[A]{
 		Prefix: strings.Split(method, "/")[0],
-		Args:   a,
+	}
+	if method == "error" {
+		var methodErr Error
+		if err := json.Unmarshal(args, &methodErr); err != nil {
+			return fmt.Errorf("failed to unmarshal error: %w", err)
+		}
+		m.Err = &methodErr
+	} else {
+		var a A
+		if err := json.Unmarshal(args, &a); err != nil {
+			return fmt.Errorf("failed to unmarshal args: %w", err)
+		}
+		m.Args = a
 	}
 	i.Method = &m
 	id, ok := raw[2].(string)
@@ -65,3 +80,5 @@ func (i *Invocation[A]) UnmarshalJSON(b []byte) error {
 	i.ID = id
 	return nil
 }
+
+// TODO: custom unmarshal for Error to capture any additional information in MoreDetails
