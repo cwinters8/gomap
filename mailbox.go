@@ -3,7 +3,9 @@ package gomap
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
+
+	"github.com/cwinters8/gomap/arguments"
+	"github.com/cwinters8/gomap/utils"
 )
 
 type Mailbox struct {
@@ -23,24 +25,39 @@ func (c *Client) NewMailbox() *Mailbox {
 // requires m.Name to be populated
 func (m *Mailbox) Query() error {
 	if len(m.Name) < 1 {
-		return fmt.Errorf("m.Name must be non-empty")
+		return fmt.Errorf("mailbox Name must be non-empty")
 	}
-	var args MailboxQuery
-	args.AccountID = m.client.Session.PrimaryAccounts.Mail
-	args.Filter.Name = m.Name
-	b, err := json.Marshal(args)
+
+	i := Invocation[arguments.Query]{
+		Method: &Method[arguments.Query]{
+			Args: arguments.Query{
+				AccountID: m.client.Session.PrimaryAccounts.Mail,
+				Filter: arguments.Filter{
+					Name: m.Name,
+				},
+			},
+		},
+	}
+
+	_, err := json.Marshal(i)
 	if err != nil {
 		return fmt.Errorf("failed to marshal args to json: %w", err)
 	}
-	status, _, err := m.client.makeRequest(http.MethodPost, m.client.Session.APIURL, b)
-	if err != nil {
-		return fmt.Errorf("request status %d\nfailed to make query request: %w", status, err)
-	}
+	// status, body, err := m.client.httpRequest(http.MethodPost, m.client.Session.APIURL, b)
+	// if err != nil {
+	// 	return fmt.Errorf("request status %d\nfailed to make query request: %w", status, err)
+	// }
+
 	// TODO: unmarshal body to mailbox
 	return fmt.Errorf("not implemented")
 }
 
 func (m Mailbox) MarshalJSON() ([]byte, error) {
 
-	return nil, fmt.Errorf("not implemented")
+	return nil, utils.ErrNotImplemented
+}
+
+func (m *Mailbox) UnmarshalJSON(b []byte) error {
+
+	return utils.ErrNotImplemented
 }

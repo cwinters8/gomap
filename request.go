@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/cwinters8/gomap/arguments"
+	"github.com/cwinters8/gomap/utils"
 )
 
 type Request[A arguments.Args] struct {
@@ -35,7 +36,7 @@ func (r *Request[A]) Send(c *Client) (*Response[A], error) {
 		}
 	}
 	if len(errs) > 0 {
-		return nil, fmt.Errorf("found method errors: %+v", errs)
+		return nil, fmt.Errorf("found method errors: %s", utils.Prettier(errs))
 	}
 	return &resp, nil
 }

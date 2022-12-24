@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/cwinters8/gomap/arguments"
+	"github.com/cwinters8/gomap/utils"
 )
 
 type Invocation[A arguments.Args] struct {
@@ -82,3 +83,30 @@ func (i *Invocation[A]) UnmarshalJSON(b []byte) error {
 }
 
 // TODO: custom unmarshal for Error to capture any additional information in MoreDetails
+func (e *Error) UnmarshalJSON(b []byte) error {
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return fmt.Errorf("failed to unmarshal error: %w", err)
+	}
+	details := map[string]any{}
+	for k, v := range m {
+		switch k {
+		case "type":
+			t, ok := v.(string)
+			if !ok {
+				return fmt.Errorf("failed to coerce type to string. %s", utils.Describe(v))
+			}
+			e.Type = t
+		case "properties":
+			p, ok := v.([]string)
+			if !ok {
+				return fmt.Errorf("failed to coerce properties to []string. %s", utils.Describe(v))
+			}
+			e.Properties = p
+		default:
+			details[k] = v
+		}
+	}
+	e.MoreDetails = details
+	return nil
+}

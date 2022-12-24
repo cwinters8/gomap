@@ -3,5 +3,5 @@ package arguments
 type Query struct {
 	AccountID string   `json:"accountId"`
 	Filter    Filter   `json:"filter"`
-	IDs       []string `json:"ids"`
+	IDs       []string `json:"ids,omitempty"`
 }
