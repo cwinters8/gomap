@@ -15,6 +15,21 @@ type Request[A arguments.Args] struct {
 	SessionState string           `json:"sessionState"`
 }
 
+func NewRequest[A arguments.Args](calls []*Invocation[A]) *Request[A] {
+	return &Request[A]{
+		Using: []Capability{
+			UsingCore,
+			UsingMail,
+		},
+		Calls: calls,
+	}
+}
+
+// adds the submission capability to the r.Using slice
+func (r *Request[A]) UseSubmission() {
+	r.Using = append(r.Using, UsingSubmission)
+}
+
 func (r *Request[A]) Send(c *Client) (*Response[A], error) {
 	b, err := json.Marshal(r)
 	if err != nil {

@@ -1,7 +1,6 @@
 package gomap
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/cwinters8/gomap/arguments"
@@ -30,6 +29,7 @@ func (m *Mailbox) Query() error {
 
 	i := Invocation[arguments.Query]{
 		Method: &Method[arguments.Query]{
+			Prefix: "Mailbox",
 			Args: arguments.Query{
 				AccountID: m.client.Session.PrimaryAccounts.Mail,
 				Filter: arguments.Filter{
@@ -38,18 +38,12 @@ func (m *Mailbox) Query() error {
 			},
 		},
 	}
-
-	_, err := json.Marshal(i)
+	resp, err := NewRequest([]*Invocation[arguments.Query]{&i}).Send(m.client)
 	if err != nil {
-		return fmt.Errorf("failed to marshal args to json: %w", err)
+		return fmt.Errorf("failed to send query request: %w", err)
 	}
-	// status, body, err := m.client.httpRequest(http.MethodPost, m.client.Session.APIURL, b)
-	// if err != nil {
-	// 	return fmt.Errorf("request status %d\nfailed to make query request: %w", status, err)
-	// }
-
-	// TODO: unmarshal body to mailbox
-	return fmt.Errorf("not implemented")
+	m.ID = resp.Results[0].Method.Args.IDs[0]
+	return nil
 }
 
 func (m Mailbox) MarshalJSON() ([]byte, error) {
