@@ -44,7 +44,11 @@ func TestSetJSON(t *testing.T) {
 	if err := json.Unmarshal(b, &got); err != nil {
 		t.Fatalf("failed to unmarshal json to set args: %s", err.Error())
 	}
-	utils.Checkf(t, s.AccountID != got["accountId"], "wanted account id %s; got %s", s.AccountID, got["accountId"])
+	cases := []*utils.Case{{
+		Check:  s.AccountID != got["accountId"],
+		Format: "wanted account id %s; got %s",
+		Args:   []any{s.AccountID, got["accountId"]},
+	}}
 	wantMailbox := s.Create.MailboxIDs[0]
 	gotCreate, ok := got["create"].(map[string]any)
 	if !ok {
@@ -90,27 +94,52 @@ func TestSetJSON(t *testing.T) {
 	if !ok {
 		t.Fatalf("failed to coerce from address. %s", utils.Describe(gotFromAddr[0]))
 	}
-	utils.Checkf(t, from.Name != gotFrom["name"], "wanted from name %s; got %s", from.Name, gotFrom["name"])
-	utils.Checkf(t, from.Email != gotFrom["email"], "wanted from name %s; got %s", from.Email, gotFrom["email"])
+	cases = append(cases, []*utils.Case{{
+		Check:  from.Name != gotFrom["name"],
+		Format: "wanted from name %s; got %s",
+		Args:   []any{from.Name, gotFrom["name"]},
+	}, {
+		Check:  from.Email != gotFrom["email"],
+		Format: "wanted from email %s; got %s",
+		Args:   []any{from.Email, gotFrom["email"]},
+	}}...)
 	gotToAddr, ok := gotEmail["to"].([]any)
 	if !ok {
 		t.Fatalf("failed to coerce to addresses. %s", utils.Describe(gotEmail["to"]))
 	}
 	gotTo := gotToAddr[0].(map[string]any)
-	utils.Checkf(t, to.Name != gotTo["name"], "wanted to name %s; got %s", to.Name, gotTo["name"])
-	utils.Checkf(t, to.Email != gotTo["email"], "wanted to email %s; got %s", to.Email, gotTo["email"])
-	utils.Checkf(t, s.Create.Subject != gotEmail["subject"], "wanted subject %s; got %s", s.Create.Subject, gotEmail["subject"])
+	cases = append(cases, []*utils.Case{{
+		Check:  to.Name != gotTo["name"],
+		Format: "wanted to name %s; got %s",
+		Args:   []any{to.Name, gotTo["name"]},
+	}, {
+		Check:  to.Email != gotTo["email"],
+		Format: "wanted to email %s; got %s",
+		Args:   []any{to.Email, gotTo["email"]},
+	}, {
+		Check:  s.Create.Subject != gotEmail["subject"],
+		Format: "wanted subject %s; got %s",
+		Args:   []any{s.Create.Subject, gotEmail["subject"]},
+	}}...)
 	gotBodyStructure, ok := gotEmail["bodyStructure"].(map[string]any)
 	if !ok {
 		t.Fatalf("failed to coerce body structure. %s", utils.Describe(gotEmail["bodyStructure"]))
 	}
-	utils.Checkf(t, s.Create.BodyStructure.ID != gotBodyStructure["partId"], "wanted body ID %s; got %s", s.Create.BodyStructure.ID, gotBodyStructure["partId"])
+	cases = append(cases, &utils.Case{
+		Check:  s.Create.BodyStructure.ID != gotBodyStructure["partId"],
+		Format: "wanted body ID %s; got %s",
+		Args:   []any{s.Create.BodyStructure.ID, gotBodyStructure["partId"]},
+	})
 	bType, ok := gotBodyStructure["type"].(string)
 	if !ok {
 		t.Fatalf("failed to coerce body type. %s", utils.Describe(gotBodyStructure["type"]))
 	}
 	gotBodyType := arguments.BodyType(bType)
-	utils.Checkf(t, s.Create.BodyStructure.Type != gotBodyType, "wanted gotBodyStructure type %s; got %s", s.Create.BodyStructure.Type, gotBodyType)
+	cases = append(cases, &utils.Case{
+		Check:  s.Create.BodyStructure.Type != gotBodyType,
+		Format: "wanted gotBodyStructure type %s; got %s",
+		Args:   []any{s.Create.BodyStructure.Type, gotBodyType},
+	})
 	gotBodyValues, ok := gotEmail["bodyValues"].(map[string]any)
 	if !ok {
 		t.Fatalf("failed to coerce body values. %s", utils.Describe(gotEmail["bodyValues"]))
@@ -129,5 +158,16 @@ func TestSetJSON(t *testing.T) {
 	if !ok {
 		t.Fatalf("failed to coerce body value. %s", utils.Describe(gotBodyValues[gotBodyID]))
 	}
-	utils.Checkf(t, s.Create.BodyValue.Value != values["value"], "wanted body value %s; got %s", s.Create.BodyValue.Value, values["value"])
+	cases = append(cases, &utils.Case{
+		Check:  s.Create.BodyValue.Value != values["value"],
+		Format: "wanted body value %s; got %s",
+		Args:   []any{s.Create.BodyValue.Value, values["value"]},
+	})
+
+	// evaluate cases
+	for _, c := range cases {
+		if c.Check {
+			t.Errorf(c.Format, c.Args...)
+		}
+	}
 }
