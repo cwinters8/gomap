@@ -8,14 +8,16 @@ import (
 )
 
 type Mailbox struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
+	ID     string   `json:"id"`
+	Name   string   `json:"name"`
+	Emails []string // IDs of emails associated with this mailbox
 	client *Client
 }
 
-func (c *Client) NewMailbox() *Mailbox {
+func (c *Client) NewMailbox(name string) *Mailbox {
 	return &Mailbox{
 		client: c,
+		Name:   name,
 	}
 }
 
@@ -44,6 +46,17 @@ func (m *Mailbox) Query() error {
 	}
 	m.ID = resp.Results[0].Method.Args.IDs[0]
 	return nil
+}
+
+// creates a new email assigned to this mailbox
+// and returns the email's ID
+//
+// note that this does not send the email to the recipient.
+// it will simply create a "draft" email in the mailbox
+// that can later be sent using SubmitEmail
+func (m *Mailbox) NewEmail(to, subject, msg string) (string, error) {
+
+	return "", utils.ErrNotImplemented
 }
 
 func (m Mailbox) MarshalJSON() ([]byte, error) {

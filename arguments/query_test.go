@@ -8,6 +8,7 @@ import (
 	"github.com/cwinters8/gomap/utils"
 )
 
+// this test may not be necessary, because custom marshal/unmarshal is not needed for arguments.Query
 func TestQueryJSON(t *testing.T) {
 	q := arguments.Query{
 		AccountID: "xyz",
