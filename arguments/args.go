@@ -1,7 +1,7 @@
 package arguments
 
 type Args interface {
-	Query
+	Query | Set
 }
 
 type Filter struct {

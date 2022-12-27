@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/cwinters8/gomap"
+	"github.com/cwinters8/gomap/arguments"
 	"github.com/cwinters8/gomap/utils"
 )
 
@@ -15,9 +16,10 @@ func TestMailbox(t *testing.T) {
 		failf(t, "failed to instantiate new client: %s", err.Error())
 	}
 	t.Run("query", func(t *testing.T) {
-		box := client.NewMailbox("Inbox")
-		if err := box.Query(); err != nil {
-			failf(t, "failed to query for mailbox %s: %s", box.Name, err.Error())
+		inbox := "Inbox"
+		box, err := client.NewMailbox(inbox)
+		if err != nil {
+			t.Fatalf("failed to instantiate new mailbox %s: %s", inbox, err.Error())
 		}
 		wantID := os.Getenv("FASTMAIL_INBOX_ID")
 		if wantID != box.ID {
@@ -25,9 +27,20 @@ func TestMailbox(t *testing.T) {
 		}
 	})
 	t.Run("draft", func(t *testing.T) {
-		box := client.NewMailbox("Draft")
+		drafts := "Drafts"
+		box, err := client.NewMailbox(drafts)
+		if err != nil {
+			t.Fatalf("failed to instantiate new mailbox %s: %s", drafts, err.Error())
+		}
 		id, err := box.NewEmail(
-			"tester@clarkwinters.com",
+			&arguments.Address{
+				Name:  "Clark the Gopher",
+				Email: "dev@clarkwinters.com",
+			},
+			&arguments.Address{
+				Name:  "Tester McTesterson",
+				Email: "tester@clarkwinters.com",
+			},
 			"hello world!",
 			"this should land in the Drafts folder",
 		)

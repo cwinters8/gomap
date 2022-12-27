@@ -5,20 +5,30 @@ import (
 
 	"github.com/cwinters8/gomap/arguments"
 	"github.com/cwinters8/gomap/utils"
+
+	"github.com/google/uuid"
 )
 
+// TODO: what if each method ultimately returned an Invocation,
+// and these could be chained together to execute as a single request?
+
 type Mailbox struct {
-	ID     string   `json:"id"`
-	Name   string   `json:"name"`
-	Emails []string // IDs of emails associated with this mailbox
+	ID     string      `json:"id"`
+	Name   string      `json:"name"`
+	Emails []uuid.UUID // IDs of emails associated with this mailbox
 	client *Client
 }
 
-func (c *Client) NewMailbox(name string) *Mailbox {
-	return &Mailbox{
+// TODO: maybe initialize the new mailbox with m.Query?
+func (c *Client) NewMailbox(name string) (*Mailbox, error) {
+	m := &Mailbox{
 		client: c,
 		Name:   name,
 	}
+	if err := m.Query(); err != nil {
+		return nil, fmt.Errorf("failed to query for mailbox: %w", err)
+	}
+	return m, nil
 }
 
 // queries for the mailbox and populates m.ID if found
@@ -49,14 +59,44 @@ func (m *Mailbox) Query() error {
 }
 
 // creates a new email assigned to this mailbox
-// and returns the email's ID
 //
 // note that this does not send the email to the recipient.
 // it will simply create a "draft" email in the mailbox
 // that can later be sent using SubmitEmail
-func (m *Mailbox) NewEmail(to, subject, msg string) (string, error) {
-
-	return "", utils.ErrNotImplemented
+//
+// TODO: `to` should be a slice of *arguments.Address
+func (m *Mailbox) NewEmail(from, to *arguments.Address, subject, msg string) (uuid.UUID, error) {
+	if len(m.ID) < 1 {
+		return uuid.Nil, fmt.Errorf("m.ID must have a valid ID in order to create a new email. try running m.Query first")
+	}
+	// TODO: generate IDs for Message and Body structs
+	message, err := arguments.NewMessage(
+		arguments.Mailboxes{m.ID},
+		from,
+		to,
+		subject,
+		msg,
+	)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to instantiate new message: %w", err)
+	}
+	i := Invocation[arguments.Set]{
+		Method: &Method[arguments.Set]{
+			Prefix: "Email",
+			Args: arguments.Set{
+				AccountID: m.client.Session.PrimaryAccounts.Mail,
+				Create:    message,
+			},
+		},
+	}
+	// create and send request for i
+	resp, err := NewRequest([]*Invocation[arguments.Set]{&i}).Send(m.client)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to send email set request: %w", err)
+	}
+	id := resp.Results[0].Method.Args.Create.ID
+	m.Emails = append(m.Emails, id)
+	return id, utils.ErrNotImplemented
 }
 
 func (m Mailbox) MarshalJSON() ([]byte, error) {

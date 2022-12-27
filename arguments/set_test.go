@@ -6,7 +6,40 @@ import (
 
 	"github.com/cwinters8/gomap/arguments"
 	"github.com/cwinters8/gomap/utils"
+
+	"github.com/google/uuid"
 )
+
+func TestNewMessage(t *testing.T) {
+	msg, err := arguments.NewMessage(
+		[]string{"xyz-box"},
+		&arguments.Address{
+			Name:  "Clark the Gopher",
+			Email: "dev@clarkwinters.com",
+		},
+		&arguments.Address{
+			Name:  "Tester McSet",
+			Email: "tester@clarkwinters.com",
+		},
+		"hello world!",
+		":)",
+	)
+	if err != nil {
+		t.Fatalf("failed to instantiate new message: %s", err.Error())
+	}
+	cases := []*utils.Case{{
+		Check:  msg.ID == uuid.Nil,
+		Format: "message ID must not be nil",
+	}, {
+		Check:  msg.Body.ID == uuid.Nil,
+		Format: "message body ID must not be nil",
+	}}
+	for _, c := range cases {
+		if c.Check {
+			t.Errorf(c.Format, c.Args...)
+		}
+	}
+}
 
 func TestSetJSON(t *testing.T) {
 	from := arguments.Address{
@@ -17,24 +50,32 @@ func TestSetJSON(t *testing.T) {
 		Name:  "gopher",
 		Email: "tester@clarkwinters.com",
 	}
-	bodyID := "xyz-body"
+
+	msg, err := arguments.NewMessage(
+		[]string{"xyz-box"},
+		&from,
+		&to,
+		"the meaning of life, the universe, and everything",
+		"42",
+	)
+	if err != nil {
+		t.Fatalf("failed to instantiate new message: %s", err.Error())
+	}
+	id, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatalf("failed to generate new uuid: %s", err.Error())
+	}
+	msg.ID = id
+	bodyID, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatalf("failed to generate new uuid: %s", err.Error())
+	}
+	if err := msg.Body.SetID(bodyID); err != nil {
+		t.Fatalf("failed to set body ID: %s", err.Error())
+	}
 	s := arguments.Set{
 		AccountID: "xyz",
-		Create: &arguments.Message{
-			ID:         "xyz-message",
-			MailboxIDs: []string{"xyz-box"},
-			From:       []*arguments.Address{&from},
-			To:         []*arguments.Address{&to},
-			Subject:    "the meaning of life, the universe, and everything",
-			BodyStructure: &arguments.BodyStructure{
-				ID:   bodyID,
-				Type: arguments.TextPlain,
-			},
-			BodyValue: &arguments.BodyValue{
-				ID:    bodyID,
-				Value: "42",
-			},
-		},
+		Create:    msg,
 	}
 	b, err := json.Marshal(s)
 	if err != nil {
@@ -56,13 +97,13 @@ func TestSetJSON(t *testing.T) {
 	}
 	var msgID string
 	for k := range gotCreate {
-		if k == s.Create.ID {
+		if k == s.Create.ID.String() {
 			msgID = k
 			break
 		}
 	}
 	if len(msgID) < 1 {
-		t.Fatalf("message ID %s not found", s.Create.ID)
+		t.Fatalf("message ID %s not found", s.Create.ID.String())
 	}
 	gotEmail, ok := gotCreate[msgID].(map[string]any)
 	if !ok {
@@ -125,10 +166,11 @@ func TestSetJSON(t *testing.T) {
 	if !ok {
 		t.Fatalf("failed to coerce body structure. %s", utils.Describe(gotEmail["bodyStructure"]))
 	}
+	wantBodyIDStr := s.Create.Body.ID.String()
 	cases = append(cases, &utils.Case{
-		Check:  s.Create.BodyStructure.ID != gotBodyStructure["partId"],
+		Check:  wantBodyIDStr != gotBodyStructure["partId"],
 		Format: "wanted body ID %s; got %s",
-		Args:   []any{s.Create.BodyStructure.ID, gotBodyStructure["partId"]},
+		Args:   []any{wantBodyIDStr, gotBodyStructure["partId"]},
 	})
 	bType, ok := gotBodyStructure["type"].(string)
 	if !ok {
@@ -136,9 +178,9 @@ func TestSetJSON(t *testing.T) {
 	}
 	gotBodyType := arguments.BodyType(bType)
 	cases = append(cases, &utils.Case{
-		Check:  s.Create.BodyStructure.Type != gotBodyType,
-		Format: "wanted gotBodyStructure type %s; got %s",
-		Args:   []any{s.Create.BodyStructure.Type, gotBodyType},
+		Check:  s.Create.Body.Type != gotBodyType,
+		Format: "wanted body type %s; got %s",
+		Args:   []any{s.Create.Body.Type, gotBodyType},
 	})
 	gotBodyValues, ok := gotEmail["bodyValues"].(map[string]any)
 	if !ok {
@@ -146,22 +188,22 @@ func TestSetJSON(t *testing.T) {
 	}
 	var gotBodyID string
 	for k := range gotBodyValues {
-		if k == bodyID {
+		if k == bodyID.String() {
 			gotBodyID = k
 			break
 		}
 	}
 	if len(gotBodyID) < 1 {
-		t.Fatalf("body ID %s not found", bodyID)
+		t.Fatalf("body ID %s not found", bodyID.String())
 	}
 	values, ok := gotBodyValues[gotBodyID].(map[string]any)
 	if !ok {
 		t.Fatalf("failed to coerce body value. %s", utils.Describe(gotBodyValues[gotBodyID]))
 	}
 	cases = append(cases, &utils.Case{
-		Check:  s.Create.BodyValue.Value != values["value"],
+		Check:  s.Create.Body.Value != values["value"],
 		Format: "wanted body value %s; got %s",
-		Args:   []any{s.Create.BodyValue.Value, values["value"]},
+		Args:   []any{s.Create.Body.Value, values["value"]},
 	})
 
 	// evaluate cases

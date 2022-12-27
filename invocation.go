@@ -25,9 +25,9 @@ func (m Method[A]) Name() string {
 }
 
 type Error struct {
-	Type        string   `json:"type"`
-	Properties  []string `json:"properties"`
-	MoreDetails map[string]any
+	Type        string         `json:"type"`
+	Properties  []string       `json:"properties"`
+	MoreDetails map[string]any `json:"moreDetails"`
 }
 
 func (i Invocation[A]) MarshalJSON() ([]byte, error) {
