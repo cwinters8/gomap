@@ -14,8 +14,6 @@ type Invocation[A arguments.Args] struct {
 	Method *Method[A]
 }
 
-// TODO: add NewInvocation function that creates a new invocation and assigns it an ID
-
 type Method[A arguments.Args] struct {
 	Prefix string
 	Type   MethodType

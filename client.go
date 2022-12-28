@@ -46,8 +46,6 @@ type Accounts struct {
 	Submission string `json:"urn:ietf:params:jmap:submission"`
 }
 
-// TODO: probably remove the url argument. may be redundant to pass it here,
-// as it is already available on the client at c.Session.APIURL
 func (c *Client) httpRequest(method string, url string, body []byte) (int, []byte, error) {
 	var (
 		req *http.Request

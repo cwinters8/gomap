@@ -9,9 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// TODO: what if each method ultimately returned an Invocation,
-// and these could be chained together to execute as a single request?
-
 type Mailbox struct {
 	ID     string      `json:"id"`
 	Name   string      `json:"name"`
@@ -19,7 +16,6 @@ type Mailbox struct {
 	client *Client
 }
 
-// TODO: maybe initialize the new mailbox with m.Query?
 func (c *Client) NewMailbox(name string) (*Mailbox, error) {
 	m := &Mailbox{
 		client: c,
@@ -64,13 +60,10 @@ func (m *Mailbox) Query() error {
 // note that this does not send the email to the recipient.
 // it will simply create a "draft" email in the mailbox
 // that can later be sent using SubmitEmail
-//
-// TODO: `to` should be a slice of *arguments.Address
 func (m *Mailbox) NewEmail(from, to *arguments.Address, subject, msg string) (uuid.UUID, error) {
 	if len(m.ID) < 1 {
 		return uuid.Nil, fmt.Errorf("m.ID must have a valid ID in order to create a new email. try running m.Query first")
 	}
-	// TODO: generate IDs for Message and Body structs
 	message, err := arguments.NewMessage(
 		arguments.Mailboxes{m.ID},
 		from,
