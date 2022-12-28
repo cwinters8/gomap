@@ -42,6 +42,7 @@ func (m *Mailbox) Query() error {
 	i := Invocation[arguments.Query]{
 		Method: &Method[arguments.Query]{
 			Prefix: "Mailbox",
+			Type:   QueryMethod,
 			Args: arguments.Query{
 				AccountID: m.client.Session.PrimaryAccounts.Mail,
 				Filter: arguments.Filter{
@@ -83,6 +84,7 @@ func (m *Mailbox) NewEmail(from, to *arguments.Address, subject, msg string) (uu
 	i := Invocation[arguments.Set]{
 		Method: &Method[arguments.Set]{
 			Prefix: "Email",
+			Type:   SetMethod,
 			Args: arguments.Set{
 				AccountID: m.client.Session.PrimaryAccounts.Mail,
 				Create:    message,
@@ -93,6 +95,13 @@ func (m *Mailbox) NewEmail(from, to *arguments.Address, subject, msg string) (uu
 	resp, err := NewRequest([]*Invocation[arguments.Set]{&i}).Send(m.client)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to send email set request: %w", err)
+	}
+	if len(resp.Results) < 1 {
+		return uuid.Nil, fmt.Errorf("results slice is empty")
+	}
+	create := resp.Results[0].Method.Args.Create
+	if create == nil {
+		return uuid.Nil, fmt.Errorf("result method's Create message is nil")
 	}
 	id := resp.Results[0].Method.Args.Create.ID
 	m.Emails = append(m.Emails, id)

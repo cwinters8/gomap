@@ -14,15 +14,26 @@ type Invocation[A arguments.Args] struct {
 	Method *Method[A]
 }
 
+// TODO: add NewInvocation function that creates a new invocation and assigns it an ID
+
 type Method[A arguments.Args] struct {
 	Prefix string
+	Type   MethodType
 	Args   A
 	Err    *Error
 }
 
 func (m Method[A]) Name() string {
-	return fmt.Sprintf("%s/query", m.Prefix)
+	return fmt.Sprintf("%s/%s", m.Prefix, m.Type)
 }
+
+type MethodType string
+
+const (
+	QueryMethod MethodType = "query"
+	GetMethod   MethodType = "get"
+	SetMethod   MethodType = "set"
+)
 
 type Error struct {
 	Type        string         `json:"type"`
@@ -82,7 +93,6 @@ func (i *Invocation[A]) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// TODO: custom unmarshal for Error to capture any additional information in MoreDetails
 func (e *Error) UnmarshalJSON(b []byte) error {
 	var m map[string]any
 	if err := json.Unmarshal(b, &m); err != nil {

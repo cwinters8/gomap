@@ -12,6 +12,9 @@ var ErrNotImplemented = fmt.Errorf("not implemented")
 //
 // useful for providing meaningful error messages when a type coercion fails
 func Describe(value any) string {
+	if value == nil {
+		return "value is nil"
+	}
 	return fmt.Sprintf("value `%v` has underlying type `%s`", Prettier(value), reflect.TypeOf(value).Kind().String())
 }
 

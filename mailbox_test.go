@@ -45,10 +45,10 @@ func TestMailbox(t *testing.T) {
 			"this should land in the Drafts folder",
 		)
 		if err != nil {
-			failf(t, "failed to create draft email: %s", err.Error())
+			t.Fatalf("failed to create draft email: %s", err.Error())
 		}
 		if len(box.Emails) < 1 {
-			utils.Failf(t, "new email not assigned to mailbox")
+			t.Fatalf("new email not assigned to mailbox")
 		}
 		if id != box.Emails[0] {
 			t.Errorf("returned ID and stored ID do not match. %s returned; %s stored", id, box.Emails[0])

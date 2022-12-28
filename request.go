@@ -51,10 +51,12 @@ func (r *Request[A]) Send(c *Client) (*Response[A], error) {
 		}
 	}
 	if len(errs) > 0 {
-		return nil, fmt.Errorf("found method errors: %s", utils.Prettier(errs))
+		return nil, fmt.Errorf("found method errors: `%s`. %s", utils.Prettier(errs), utils.Describe(r.Calls))
 	}
 	return &resp, nil
 }
+
+// TODO: need a "Result" struct that will look slightly different for each type of request
 
 type Response[A arguments.Args] struct {
 	Results []*Invocation[A] `json:"methodResponses"`
