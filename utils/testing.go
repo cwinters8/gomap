@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-
 	"testing"
 
 	"github.com/joho/godotenv"
