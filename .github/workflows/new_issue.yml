@@ -1,0 +1,17 @@
+name: Add new issues to gomap project
+
+on:
+  issues:
+    types:
+      - opened
+
+jobs:
+  add:
+    name: Add issue to gomap project
+    runs-on: ubuntu-22.04
+    steps:
+      - name: add to project
+        uses: actions/add-to-project@v0.4.0
+        with:
+          project-url: https://github.com/users/cwinters8/projects/2
+          github-token: ${{ secrets.PROJECT_PAT }}
