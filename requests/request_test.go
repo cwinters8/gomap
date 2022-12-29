@@ -8,6 +8,8 @@ import (
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/requests/arguments"
 	"github.com/cwinters8/gomap/utils"
+
+	"github.com/google/uuid"
 )
 
 func TestSendRequest(t *testing.T) {
@@ -18,10 +20,15 @@ func TestSendRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to instantiate a new client: %s", err.Error())
 	}
+	id, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatalf("failed to generate new uuid: %s", err.Error())
+	}
 	i := requests.Invocation[arguments.Query]{
-		ID: "xyz",
+		ID: id,
 		Method: &requests.Method[arguments.Query]{
 			Prefix: "Mailbox",
+			Type:   requests.QueryMethod,
 			Args: arguments.Query{
 				AccountID: client.Session.PrimaryAccounts.Mail,
 				Filter: arguments.Filter{

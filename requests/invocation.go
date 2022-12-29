@@ -7,10 +7,12 @@ import (
 
 	"github.com/cwinters8/gomap/requests/arguments"
 	"github.com/cwinters8/gomap/utils"
+
+	"github.com/google/uuid"
 )
 
 type Invocation[A arguments.Args] struct {
-	ID     string
+	ID     uuid.UUID
 	Method *Method[A]
 }
 
@@ -87,7 +89,11 @@ func (i *Invocation[A]) UnmarshalJSON(b []byte) error {
 	if !ok {
 		return fmt.Errorf("failed to coerce id to string")
 	}
-	i.ID = id
+	parsedID, err := uuid.Parse(id)
+	if err != nil {
+		return fmt.Errorf("failed to parse uuid: %w", err)
+	}
+	i.ID = parsedID
 	return nil
 }
 

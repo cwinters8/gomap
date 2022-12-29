@@ -7,6 +7,8 @@ import (
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/requests/arguments"
 	"github.com/cwinters8/gomap/utils"
+
+	"github.com/google/uuid"
 )
 
 func TestInvocationJSON(t *testing.T) {
@@ -19,8 +21,12 @@ func TestInvocationJSON(t *testing.T) {
 			},
 		},
 	}
+	id, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatalf("failed to generate new uuid: %s", err.Error())
+	}
 	inv := requests.Invocation[arguments.Query]{
-		ID:     "xyz",
+		ID:     id,
 		Method: &query,
 	}
 	b, err := json.Marshal(inv)
@@ -54,5 +60,4 @@ func TestInvocationJSON(t *testing.T) {
 			t.Errorf(c.Format, c.Args...)
 		}
 	}
-
 }
