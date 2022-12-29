@@ -8,8 +8,6 @@ import (
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/requests/arguments"
 	"github.com/cwinters8/gomap/utils"
-
-	"github.com/google/uuid"
 )
 
 func TestSendRequest(t *testing.T) {
@@ -20,24 +18,17 @@ func TestSendRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to instantiate a new client: %s", err.Error())
 	}
-	id, err := uuid.NewRandom()
-	if err != nil {
-		t.Fatalf("failed to generate new uuid: %s", err.Error())
-	}
-	i := requests.Invocation[arguments.Query]{
-		ID: id,
-		Method: &requests.Method[arguments.Query]{
-			Prefix: "Mailbox",
-			Type:   requests.QueryMethod,
-			Args: arguments.Query{
-				AccountID: client.Session.PrimaryAccounts.Mail,
-				Filter: arguments.Filter{
-					Name: "Inbox",
-				},
-			},
+	query := arguments.Query{
+		AccountID: client.Session.PrimaryAccounts.Mail,
+		Filter: arguments.Filter{
+			Name: "Inbox",
 		},
 	}
-	req := requests.NewRequest([]*requests.Invocation[arguments.Query]{&i})
+	i, err := requests.NewInvocation(query, "Mailbox", requests.QueryMethod)
+	if err != nil {
+		t.Fatalf("failed to instantiate new invocation: %s", err.Error())
+	}
+	req := requests.NewRequest([]*requests.Invocation[arguments.Query]{i})
 	resp, err := req.Send(client)
 	if err != nil {
 		t.Fatalf("failed to send request: %s", err.Error())
