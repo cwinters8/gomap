@@ -32,8 +32,27 @@ func TestInvocationJSON(t *testing.T) {
 		t.Fatalf("failed to unmarshal invocation: %s", err.Error())
 	}
 
-	utils.Checkf(t, inv.ID != i.ID, "wanted ID %s; got ID %s", inv.ID, i.ID)
-	utils.Checkf(t, inv.Method.Prefix != i.Method.Prefix, "wanted method prefix %s; got method prefix %s", inv.Method.Prefix, i.Method.Prefix)
-	utils.Checkf(t, inv.Method.Args.AccountID != i.Method.Args.AccountID, "wanted account ID %s; got account ID %s", inv.Method.Args.AccountID, i.Method.Args.AccountID)
-	utils.Checkf(t, inv.Method.Args.Filter.Name != i.Method.Args.Filter.Name, "wanted name filter %s; got name filter %s", inv.Method.Args.Filter.Name, i.Method.Args.Filter.Name)
+	cases := []*utils.Case{{
+		Check:  inv.ID != i.ID,
+		Format: "wanted ID %s; got ID %s",
+		Args:   []any{inv.ID, i.ID},
+	}, {
+		Check:  inv.Method.Prefix != i.Method.Prefix,
+		Format: "wanted method prefix %s; got method prefix %s",
+		Args:   []any{inv.Method.Prefix, i.Method.Prefix},
+	}, {
+		Check:  inv.Method.Args.AccountID != i.Method.Args.AccountID,
+		Format: "wanted account ID %s; got account ID %s",
+		Args:   []any{inv.Method.Args.AccountID, i.Method.Args.AccountID},
+	}, {
+		Check:  inv.Method.Args.Filter.Name != i.Method.Args.Filter.Name,
+		Format: "wanted name filter %s; got name filter %s",
+		Args:   []any{inv.Method.Args.Filter.Name, i.Method.Args.Filter.Name},
+	}}
+	for _, c := range cases {
+		if c.Check {
+			t.Errorf(c.Format, c.Args...)
+		}
+	}
+
 }

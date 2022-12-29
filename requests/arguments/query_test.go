@@ -18,12 +18,24 @@ func TestQueryJSON(t *testing.T) {
 	}
 	b, err := json.Marshal(q)
 	if err != nil {
-		utils.Failf(t, "failed to marshal query to json: %s", err.Error())
+		t.Fatalf("failed to marshal query to json: %s", err.Error())
 	}
 	var got arguments.Query
 	if err := json.Unmarshal(b, &got); err != nil {
-		utils.Failf(t, "failed to unmarshal json to query: %s", err.Error())
+		t.Fatalf("failed to unmarshal json to query: %s", err.Error())
 	}
-	utils.Checkf(t, q.AccountID != got.AccountID, "wanted account id %s; got %s", q.AccountID, got.AccountID)
-	utils.Checkf(t, q.Filter.Name != got.Filter.Name, "wanted name %s; got %s", q.Filter.Name, got.Filter.Name)
+	cases := []*utils.Case{{
+		Check:  q.AccountID != got.AccountID,
+		Format: "wanted account id %s; got %s",
+		Args:   []any{q.AccountID, got.AccountID},
+	}, {
+		Check:  q.Filter.Name != got.Filter.Name,
+		Format: "wanted name %s; got %s",
+		Args:   []any{q.Filter.Name, got.Filter.Name},
+	}}
+	for _, c := range cases {
+		if c.Check {
+			t.Errorf(c.Format, c.Args...)
+		}
+	}
 }

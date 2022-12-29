@@ -16,7 +16,7 @@ func TestSendRequest(t *testing.T) {
 	}
 	client, err := client.NewClient(os.Getenv("FASTMAIL_SESSION_URL"), os.Getenv("FASTMAIL_TOKEN"))
 	if err != nil {
-		utils.Failf(t, "failed to instantiate a new client: %s", err.Error())
+		t.Fatalf("failed to instantiate a new client: %s", err.Error())
 	}
 	i := requests.Invocation[arguments.Query]{
 		ID: "xyz",
@@ -39,13 +39,30 @@ func TestSendRequest(t *testing.T) {
 	}
 	resp, err := req.Send(client)
 	if err != nil {
-		utils.Failf(t, "failed to send request: %s", err.Error())
+		t.Fatalf("failed to send request: %s", err.Error())
 	}
 
 	gotInv := resp.Results[0]
-	utils.Checkf(t, i.ID != gotInv.ID, "wanted invocation id %s; got %s", i.ID, gotInv.ID)
-	utils.Checkf(t, i.Method.Prefix != gotInv.Method.Prefix, "wanted prefix %s; got %s", i.Method.Prefix, gotInv.Method.Prefix)
+
 	gotInboxID := gotInv.Method.Args.IDs[0]
 	wantInboxID := os.Getenv("FASTMAIL_INBOX_ID")
-	utils.Checkf(t, wantInboxID != gotInboxID, "wanted inbox id %s; got %s", wantInboxID, gotInboxID)
+
+	cases := []*utils.Case{{
+		Check:  i.ID != gotInv.ID,
+		Format: "wanted invocation id %s; got %s",
+		Args:   []any{i.ID, gotInv.ID},
+	}, {
+		Check:  i.Method.Prefix != gotInv.Method.Prefix,
+		Format: "wanted prefix %s; got %s",
+		Args:   []any{i.Method.Prefix, gotInv.Method.Prefix},
+	}, {
+		Check:  wantInboxID != gotInboxID,
+		Format: "wanted inbox id %s; got %s",
+		Args:   []any{wantInboxID, gotInboxID},
+	}}
+	for _, c := range cases {
+		if c.Check {
+			t.Errorf(c.Format, c.Args...)
+		}
+	}
 }

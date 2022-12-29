@@ -17,14 +17,32 @@ func TestNewClient(t *testing.T) {
 		t.Fatalf("failed to instantiate new client: %s", err.Error())
 	}
 	wantURL := "https://api.fastmail.com/jmap/api/"
-	switch {
-	case client == nil:
-		t.Fatalf("returned client should not be nil")
-	case client.Session == nil:
-		t.Error("session should not be nil")
-	case client.HTTPClient == nil:
-		t.Error("http client should not be nil")
-	case client.Session.APIURL != wantURL:
-		t.Errorf("wanted URL %s; got URL %s", wantURL, client.Session.APIURL)
+
+	// test cases that should cause the test to immediately fail
+	fatals := []*utils.Case{{
+		Check:  client == nil,
+		Format: "returned client should not be nil",
+	}, {
+		Check:  client.Session == nil,
+		Format: "session should not be nil",
+	}}
+	for _, c := range fatals {
+		if c.Check {
+			t.Fatalf(c.Format, c.Args...)
+		}
+	}
+
+	errors := []*utils.Case{{
+		Check:  client.HTTPClient == nil,
+		Format: "http client should not be nil",
+	}, {
+		Check:  client.Session.APIURL != wantURL,
+		Format: "wanted URL %s; got URL %s",
+		Args:   []any{wantURL, client.Session.APIURL},
+	}}
+	for _, c := range errors {
+		if c.Check {
+			t.Errorf(c.Format, c.Args...)
+		}
 	}
 }

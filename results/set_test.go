@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestSetJSON(t *testing.T) {
+func TestResultSetJSON(t *testing.T) {
 	// validate json unmarshal
 
 	t.Fatalf("not implemented")
