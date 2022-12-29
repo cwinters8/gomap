@@ -1,11 +1,11 @@
-package gomap
+package requests
 
 import (
 	"encoding/json"
 	"fmt"
 	"strings"
 
-	"github.com/cwinters8/gomap/arguments"
+	"github.com/cwinters8/gomap/requests/arguments"
 	"github.com/cwinters8/gomap/utils"
 )
 

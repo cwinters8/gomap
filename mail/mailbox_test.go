@@ -1,23 +1,26 @@
-package gomap_test
+package mail_test
 
 import (
 	"os"
 	"testing"
 
-	"github.com/cwinters8/gomap"
-	"github.com/cwinters8/gomap/arguments"
+	"github.com/cwinters8/gomap/client"
+	"github.com/cwinters8/gomap/mail"
+	"github.com/cwinters8/gomap/requests/arguments"
 	"github.com/cwinters8/gomap/utils"
 )
 
 func TestMailbox(t *testing.T) {
-	utils.Env(t)
-	client, err := gomap.NewClient(os.Getenv("FASTMAIL_SESSION_URL"), os.Getenv("FASTMAIL_TOKEN"))
+	if err := utils.Env("../.env"); err != nil {
+		t.Fatalf("failed to load env: %s", err.Error())
+	}
+	client, err := client.NewClient(os.Getenv("FASTMAIL_SESSION_URL"), os.Getenv("FASTMAIL_TOKEN"))
 	if err != nil {
-		failf(t, "failed to instantiate new client: %s", err.Error())
+		t.Fatalf("failed to instantiate new client: %s", err.Error())
 	}
 	t.Run("query", func(t *testing.T) {
 		inbox := "Inbox"
-		box, err := client.NewMailbox(inbox)
+		box, err := mail.NewMailbox(client, inbox)
 		if err != nil {
 			t.Fatalf("failed to instantiate new mailbox %s: %s", inbox, err.Error())
 		}
@@ -28,7 +31,7 @@ func TestMailbox(t *testing.T) {
 	})
 	t.Run("draft", func(t *testing.T) {
 		drafts := "Drafts"
-		box, err := client.NewMailbox(drafts)
+		box, err := mail.NewMailbox(client, drafts)
 		if err != nil {
 			t.Fatalf("failed to instantiate new mailbox %s: %s", drafts, err.Error())
 		}

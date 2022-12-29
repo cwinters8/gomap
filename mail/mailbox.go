@@ -1,9 +1,11 @@
-package gomap
+package mail
 
 import (
 	"fmt"
 
-	"github.com/cwinters8/gomap/arguments"
+	"github.com/cwinters8/gomap/client"
+	"github.com/cwinters8/gomap/requests"
+	"github.com/cwinters8/gomap/requests/arguments"
 	"github.com/cwinters8/gomap/utils"
 
 	"github.com/google/uuid"
@@ -13,12 +15,12 @@ type Mailbox struct {
 	ID     string      `json:"id"`
 	Name   string      `json:"name"`
 	Emails []uuid.UUID // IDs of emails associated with this mailbox
-	client *Client
+	Client *client.Client
 }
 
-func (c *Client) NewMailbox(name string) (*Mailbox, error) {
+func NewMailbox(client *client.Client, name string) (*Mailbox, error) {
 	m := &Mailbox{
-		client: c,
+		Client: client,
 		Name:   name,
 	}
 	if err := m.Query(); err != nil {
@@ -35,19 +37,19 @@ func (m *Mailbox) Query() error {
 		return fmt.Errorf("mailbox Name must be non-empty")
 	}
 
-	i := Invocation[arguments.Query]{
-		Method: &Method[arguments.Query]{
+	i := requests.Invocation[arguments.Query]{
+		Method: &requests.Method[arguments.Query]{
 			Prefix: "Mailbox",
-			Type:   QueryMethod,
+			Type:   requests.QueryMethod,
 			Args: arguments.Query{
-				AccountID: m.client.Session.PrimaryAccounts.Mail,
+				AccountID: m.Client.Session.PrimaryAccounts.Mail,
 				Filter: arguments.Filter{
 					Name: m.Name,
 				},
 			},
 		},
 	}
-	resp, err := NewRequest([]*Invocation[arguments.Query]{&i}).Send(m.client)
+	resp, err := requests.NewRequest([]*requests.Invocation[arguments.Query]{&i}).Send(m.Client)
 	if err != nil {
 		return fmt.Errorf("failed to send query request: %w", err)
 	}
@@ -74,18 +76,18 @@ func (m *Mailbox) NewEmail(from, to *arguments.Address, subject, msg string) (uu
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to instantiate new message: %w", err)
 	}
-	i := Invocation[arguments.Set]{
-		Method: &Method[arguments.Set]{
+	i := requests.Invocation[arguments.Set]{
+		Method: &requests.Method[arguments.Set]{
 			Prefix: "Email",
-			Type:   SetMethod,
+			Type:   requests.SetMethod,
 			Args: arguments.Set{
-				AccountID: m.client.Session.PrimaryAccounts.Mail,
+				AccountID: m.Client.Session.PrimaryAccounts.Mail,
 				Create:    message,
 			},
 		},
 	}
 	// create and send request for i
-	resp, err := NewRequest([]*Invocation[arguments.Set]{&i}).Send(m.client)
+	resp, err := requests.NewRequest([]*requests.Invocation[arguments.Set]{&i}).Send(m.Client)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to send email set request: %w", err)
 	}

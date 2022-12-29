@@ -1,4 +1,4 @@
-package gomap
+package requests
 
 const (
 	UsingCore       Capability = "urn:ietf:params:jmap:core"

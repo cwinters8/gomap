@@ -1,16 +1,16 @@
-package gomap_test
+package requests_test
 
 import (
 	"encoding/json"
 	"testing"
 
-	"github.com/cwinters8/gomap"
-	"github.com/cwinters8/gomap/arguments"
+	"github.com/cwinters8/gomap/requests"
+	"github.com/cwinters8/gomap/requests/arguments"
 	"github.com/cwinters8/gomap/utils"
 )
 
 func TestInvocationJSON(t *testing.T) {
-	query := gomap.Method[arguments.Query]{
+	query := requests.Method[arguments.Query]{
 		Prefix: "Mailbox",
 		Args: arguments.Query{
 			AccountID: "xyz",
@@ -19,17 +19,17 @@ func TestInvocationJSON(t *testing.T) {
 			},
 		},
 	}
-	inv := gomap.Invocation[arguments.Query]{
+	inv := requests.Invocation[arguments.Query]{
 		ID:     "xyz",
 		Method: &query,
 	}
 	b, err := json.Marshal(inv)
 	if err != nil {
-		failf(t, "failed to marshal invocation to json: %s", err.Error())
+		t.Fatalf("failed to marshal invocation to json: %s", err.Error())
 	}
-	var i gomap.Invocation[arguments.Query]
+	var i requests.Invocation[arguments.Query]
 	if err := json.Unmarshal(b, &i); err != nil {
-		failf(t, "failed to unmarshal invocation: %s", err.Error())
+		t.Fatalf("failed to unmarshal invocation: %s", err.Error())
 	}
 
 	utils.Checkf(t, inv.ID != i.ID, "wanted ID %s; got ID %s", inv.ID, i.ID)

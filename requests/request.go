@@ -1,11 +1,12 @@
-package gomap
+package requests
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/cwinters8/gomap/arguments"
+	"github.com/cwinters8/gomap/client"
+	"github.com/cwinters8/gomap/requests/arguments"
 	"github.com/cwinters8/gomap/utils"
 )
 
@@ -30,12 +31,12 @@ func (r *Request[A]) UseSubmission() {
 	r.Using = append(r.Using, UsingSubmission)
 }
 
-func (r *Request[A]) Send(c *Client) (*Response[A], error) {
+func (r *Request[A]) Send(c *client.Client) (*Response[A], error) {
 	b, err := json.Marshal(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal json from request: %w", err)
 	}
-	status, body, err := c.httpRequest(http.MethodPost, c.Session.APIURL, b)
+	status, body, err := c.HttpRequest(http.MethodPost, c.Session.APIURL, b)
 	if err != nil {
 		return nil, fmt.Errorf("status %d - http request failed: %w", status, err)
 	}

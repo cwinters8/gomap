@@ -1,23 +1,26 @@
-package gomap_test
+package requests_test
 
 import (
 	"os"
 	"testing"
 
-	"github.com/cwinters8/gomap"
-	"github.com/cwinters8/gomap/arguments"
+	"github.com/cwinters8/gomap/client"
+	"github.com/cwinters8/gomap/requests"
+	"github.com/cwinters8/gomap/requests/arguments"
 	"github.com/cwinters8/gomap/utils"
 )
 
 func TestSendRequest(t *testing.T) {
-	utils.Env(t)
-	client, err := gomap.NewClient(os.Getenv("FASTMAIL_SESSION_URL"), os.Getenv("FASTMAIL_TOKEN"))
+	if err := utils.Env("../.env"); err != nil {
+		t.Fatalf("failed to load env: %s", err.Error())
+	}
+	client, err := client.NewClient(os.Getenv("FASTMAIL_SESSION_URL"), os.Getenv("FASTMAIL_TOKEN"))
 	if err != nil {
 		utils.Failf(t, "failed to instantiate a new client: %s", err.Error())
 	}
-	i := gomap.Invocation[arguments.Query]{
+	i := requests.Invocation[arguments.Query]{
 		ID: "xyz",
-		Method: &gomap.Method[arguments.Query]{
+		Method: &requests.Method[arguments.Query]{
 			Prefix: "Mailbox",
 			Args: arguments.Query{
 				AccountID: client.Session.PrimaryAccounts.Mail,
@@ -27,12 +30,12 @@ func TestSendRequest(t *testing.T) {
 			},
 		},
 	}
-	req := gomap.Request[arguments.Query]{
-		Using: []gomap.Capability{
-			gomap.UsingCore, // this maybe should just be used by default - I can't think of a case when Core would not be needed
-			gomap.UsingMail,
+	req := requests.Request[arguments.Query]{
+		Using: []requests.Capability{
+			requests.UsingCore, // this maybe should just be used by default - I can't think of a case when Core would not be needed
+			requests.UsingMail,
 		},
-		Calls: []*gomap.Invocation[arguments.Query]{&i},
+		Calls: []*requests.Invocation[arguments.Query]{&i},
 	}
 	resp, err := req.Send(client)
 	if err != nil {
