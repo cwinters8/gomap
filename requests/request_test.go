@@ -30,13 +30,7 @@ func TestSendRequest(t *testing.T) {
 			},
 		},
 	}
-	req := requests.Request[arguments.Query]{
-		Using: []requests.Capability{
-			requests.UsingCore, // this maybe should just be used by default - I can't think of a case when Core would not be needed
-			requests.UsingMail,
-		},
-		Calls: []*requests.Invocation[arguments.Query]{&i},
-	}
+	req := requests.NewRequest([]*requests.Invocation[arguments.Query]{&i})
 	resp, err := req.Send(client)
 	if err != nil {
 		t.Fatalf("failed to send request: %s", err.Error())
