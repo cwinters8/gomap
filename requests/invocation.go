@@ -11,6 +11,21 @@ import (
 	"github.com/google/uuid"
 )
 
+func NewInvocation[A arguments.Args](args A, prefix string, t MethodType) (*Invocation[A], error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate new uuid: %w", err)
+	}
+	return &Invocation[A]{
+		ID: id,
+		Method: &Method[A]{
+			Prefix: prefix,
+			Type:   t,
+			Args:   args,
+		},
+	}, nil
+}
+
 type Invocation[A arguments.Args] struct {
 	ID     uuid.UUID
 	Method *Method[A]

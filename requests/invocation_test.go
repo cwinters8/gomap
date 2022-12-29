@@ -61,3 +61,41 @@ func TestInvocationJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestNewInvocation(t *testing.T) {
+	prefix := "Email"
+	i, err := requests.NewInvocation(arguments.Set{}, prefix, requests.SetMethod)
+	if err != nil {
+		t.Fatalf("failed to instantiate new invocation: %s", err.Error())
+	}
+	fatals := []*utils.Case{{
+		Check:  i == nil,
+		Format: "invocation is nil",
+	}, {
+		Check:  i.Method == nil,
+		Format: "method is nil",
+	}}
+	for _, c := range fatals {
+		if c.Check {
+			t.Fatalf(c.Format, c.Args...)
+		}
+	}
+
+	cases := []*utils.Case{{
+		Check:  len(i.ID) < 16,
+		Format: "uuid slice must be 16 bytes long",
+	}, {
+		Check:  prefix != i.Method.Prefix,
+		Format: "wanted method prefix %s; got %s",
+		Args:   []any{prefix, i.Method.Prefix},
+	}, {
+		Check:  requests.SetMethod != i.Method.Type,
+		Format: "wanted method type %s; got %s",
+		Args:   []any{requests.SetMethod, i.Method.Type},
+	}}
+	for _, c := range cases {
+		if c.Check {
+			t.Errorf(c.Format, c.Args...)
+		}
+	}
+}
