@@ -1,23 +1,23 @@
-package arguments_test
+package methods_test
 
 import (
 	"encoding/json"
 	"testing"
 
-	"github.com/cwinters8/gomap/requests/arguments"
+	"github.com/cwinters8/gomap/methods"
 	"github.com/cwinters8/gomap/utils"
 
 	"github.com/google/uuid"
 )
 
 func TestNewMessage(t *testing.T) {
-	msg, err := arguments.NewMessage(
+	msg, err := methods.NewMessage(
 		[]string{"xyz-box"},
-		&arguments.Address{
+		&methods.Address{
 			Name:  "Clark the Gopher",
 			Email: "dev@clarkwinters.com",
 		},
-		&arguments.Address{
+		&methods.Address{
 			Name:  "Tester McSet",
 			Email: "tester@clarkwinters.com",
 		},
@@ -31,38 +31,38 @@ func TestNewMessage(t *testing.T) {
 		t.Fatalf("Keywords must not be nil")
 	}
 	cases := []*utils.Case{{
-		Check:  !msg.Keywords.Seen,
-		Format: "$seen keyword value should be true",
+		Check:   !msg.Keywords.Seen,
+		Message: "$seen keyword value should be true",
 	}, {
-		Check:  !msg.Keywords.Draft,
-		Format: "$draft keyword value should be true",
+		Check:   !msg.Keywords.Draft,
+		Message: "$draft keyword value should be true",
 	}, {
-		Check:  msg.ID == uuid.Nil,
-		Format: "message ID must not be nil",
+		Check:   msg.ID == uuid.Nil,
+		Message: "message ID must not be nil",
 	}, {
-		Check:  msg.Body.ID == uuid.Nil,
-		Format: "message body ID must not be nil",
+		Check:   msg.Body.ID == uuid.Nil,
+		Message: "message body ID must not be nil",
 	}}
 	for _, c := range cases {
 		if c.Check {
-			t.Errorf(c.Format, c.Args...)
+			t.Errorf(c.Message, c.Args...)
 		}
 	}
 }
 
 func TestSetJSON(t *testing.T) {
 	// create Set data
-	from := arguments.Address{
+	from := methods.Address{
 		Name:  "Clark",
 		Email: "dev@clarkwinters.com",
 	}
-	to := arguments.Address{
+	to := methods.Address{
 		Name:  "gopher",
 		Email: "tester@clarkwinters.com",
 	}
 
 	boxName := "xyz-box"
-	msg, err := arguments.NewMessage(
+	msg, err := methods.NewMessage(
 		[]string{boxName},
 		&from,
 		&to,
@@ -84,7 +84,7 @@ func TestSetJSON(t *testing.T) {
 	if err := msg.Body.SetID(bodyID); err != nil {
 		t.Fatalf("failed to set body ID: %s", err.Error())
 	}
-	s := arguments.Set{
+	s := methods.Set{
 		AccountID: "xyz",
 		Create:    msg,
 	}
@@ -99,9 +99,9 @@ func TestSetJSON(t *testing.T) {
 			t.Fatalf("failed to unmarshal json to set args: %s", err.Error())
 		}
 		cases := []*utils.Case{{
-			Check:  s.AccountID != got["accountId"],
-			Format: "wanted account id %s; got %s",
-			Args:   []any{s.AccountID, got["accountId"]},
+			Check:   s.AccountID != got["accountId"],
+			Message: "wanted account id %s; got %s",
+			Args:    []any{s.AccountID, got["accountId"]},
 		}}
 		boxIDs := *s.Create.MailboxIDs
 		wantMailbox := boxIDs[0]
@@ -155,11 +155,11 @@ func TestSetJSON(t *testing.T) {
 			t.Fatalf("failed to coerce draft keyword to bool. %s", utils.Describe(gotKeywords["$draft"]))
 		}
 		cases = append(cases, []*utils.Case{{
-			Check:  !gotSeen,
-			Format: "wanted seen keyword value to be true",
+			Check:   !gotSeen,
+			Message: "wanted seen keyword value to be true",
 		}, {
-			Check:  !gotDraft,
-			Format: "wanted draft keyword value to be true",
+			Check:   !gotDraft,
+			Message: "wanted draft keyword value to be true",
 		}}...)
 
 		gotFromAddr, ok := gotEmail["from"].([]any)
@@ -171,13 +171,13 @@ func TestSetJSON(t *testing.T) {
 			t.Fatalf("failed to coerce from address. %s", utils.Describe(gotFromAddr[0]))
 		}
 		cases = append(cases, []*utils.Case{{
-			Check:  from.Name != gotFrom["name"],
-			Format: "wanted from name %s; got %s",
-			Args:   []any{from.Name, gotFrom["name"]},
+			Check:   from.Name != gotFrom["name"],
+			Message: "wanted from name %s; got %s",
+			Args:    []any{from.Name, gotFrom["name"]},
 		}, {
-			Check:  from.Email != gotFrom["email"],
-			Format: "wanted from email %s; got %s",
-			Args:   []any{from.Email, gotFrom["email"]},
+			Check:   from.Email != gotFrom["email"],
+			Message: "wanted from email %s; got %s",
+			Args:    []any{from.Email, gotFrom["email"]},
 		}}...)
 		gotToAddr, ok := gotEmail["to"].([]any)
 		if !ok {
@@ -185,17 +185,17 @@ func TestSetJSON(t *testing.T) {
 		}
 		gotTo := gotToAddr[0].(map[string]any)
 		cases = append(cases, []*utils.Case{{
-			Check:  to.Name != gotTo["name"],
-			Format: "wanted to name %s; got %s",
-			Args:   []any{to.Name, gotTo["name"]},
+			Check:   to.Name != gotTo["name"],
+			Message: "wanted to name %s; got %s",
+			Args:    []any{to.Name, gotTo["name"]},
 		}, {
-			Check:  to.Email != gotTo["email"],
-			Format: "wanted to email %s; got %s",
-			Args:   []any{to.Email, gotTo["email"]},
+			Check:   to.Email != gotTo["email"],
+			Message: "wanted to email %s; got %s",
+			Args:    []any{to.Email, gotTo["email"]},
 		}, {
-			Check:  s.Create.Subject != gotEmail["subject"],
-			Format: "wanted subject %s; got %s",
-			Args:   []any{s.Create.Subject, gotEmail["subject"]},
+			Check:   s.Create.Subject != gotEmail["subject"],
+			Message: "wanted subject %s; got %s",
+			Args:    []any{s.Create.Subject, gotEmail["subject"]},
 		}}...)
 		gotBodyStructure, ok := gotEmail["bodyStructure"].(map[string]any)
 		if !ok {
@@ -203,19 +203,19 @@ func TestSetJSON(t *testing.T) {
 		}
 		wantBodyIDStr := s.Create.Body.ID.String()
 		cases = append(cases, &utils.Case{
-			Check:  wantBodyIDStr != gotBodyStructure["partId"],
-			Format: "wanted body ID %s; got %s",
-			Args:   []any{wantBodyIDStr, gotBodyStructure["partId"]},
+			Check:   wantBodyIDStr != gotBodyStructure["partId"],
+			Message: "wanted body ID %s; got %s",
+			Args:    []any{wantBodyIDStr, gotBodyStructure["partId"]},
 		})
 		bType, ok := gotBodyStructure["type"].(string)
 		if !ok {
 			t.Fatalf("failed to coerce body type. %s", utils.Describe(gotBodyStructure["type"]))
 		}
-		gotBodyType := arguments.BodyType(bType)
+		gotBodyType := methods.BodyType(bType)
 		cases = append(cases, &utils.Case{
-			Check:  s.Create.Body.Type != gotBodyType,
-			Format: "wanted body type %s; got %s",
-			Args:   []any{s.Create.Body.Type, gotBodyType},
+			Check:   s.Create.Body.Type != gotBodyType,
+			Message: "wanted body type %s; got %s",
+			Args:    []any{s.Create.Body.Type, gotBodyType},
 		})
 		gotBodyValues, ok := gotEmail["bodyValues"].(map[string]any)
 		if !ok {
@@ -236,15 +236,15 @@ func TestSetJSON(t *testing.T) {
 			t.Fatalf("failed to coerce body value. %s", utils.Describe(gotBodyValues[gotBodyID]))
 		}
 		cases = append(cases, &utils.Case{
-			Check:  s.Create.Body.Value != values["value"],
-			Format: "wanted body value %s; got %s",
-			Args:   []any{s.Create.Body.Value, values["value"]},
+			Check:   s.Create.Body.Value != values["value"],
+			Message: "wanted body value %s; got %s",
+			Args:    []any{s.Create.Body.Value, values["value"]},
 		})
 
 		// evaluate cases
 		for _, c := range cases {
 			if c.Check {
-				t.Errorf(c.Format, c.Args...)
+				t.Errorf(c.Message, c.Args...)
 			}
 		}
 	})
@@ -252,7 +252,7 @@ func TestSetJSON(t *testing.T) {
 		if len(b) < 1 {
 			t.Fatalf("empty byte slice")
 		}
-		var gotSet arguments.Set
+		var gotSet methods.Set
 		if err := json.Unmarshal(b, &gotSet); err != nil {
 			t.Fatalf("failed to unmarshal set: %s", err.Error())
 		}
@@ -264,58 +264,58 @@ func TestSetJSON(t *testing.T) {
 			t.Fatalf("no mailboxes 😢")
 		}
 		cases := []*utils.Case{{
-			Check:  s.AccountID != gotSet.AccountID,
-			Format: "wanted account id %s; got %s",
-			Args:   []any{s.AccountID, gotSet.AccountID},
+			Check:   s.AccountID != gotSet.AccountID,
+			Message: "wanted account id %s; got %s",
+			Args:    []any{s.AccountID, gotSet.AccountID},
 		}, {
-			Check:  id != gotSet.Create.ID,
-			Format: "wanted message id %v; got %v",
-			Args:   []any{id, gotSet.Create.ID},
+			Check:   id != gotSet.Create.ID,
+			Message: "wanted message id %v; got %v",
+			Args:    []any{id, gotSet.Create.ID},
 		}, {
-			Check:  boxName != gotBoxes[0],
-			Format: "wanted mailbox id %s; got %s",
-			Args:   []any{boxName, gotBoxes[0]},
+			Check:   boxName != gotBoxes[0],
+			Message: "wanted mailbox id %s; got %s",
+			Args:    []any{boxName, gotBoxes[0]},
 		}, {
-			Check:  from.Name != gotSet.Create.From[0].Name,
-			Format: "wanted from name %s; got %s",
-			Args:   []any{from.Name, gotSet.Create.From[0].Name},
+			Check:   from.Name != gotSet.Create.From[0].Name,
+			Message: "wanted from name %s; got %s",
+			Args:    []any{from.Name, gotSet.Create.From[0].Name},
 		}, {
-			Check:  from.Email != gotSet.Create.From[0].Email,
-			Format: "wanted from email %s; got %s",
-			Args:   []any{from.Email, gotSet.Create.From[0].Email},
+			Check:   from.Email != gotSet.Create.From[0].Email,
+			Message: "wanted from email %s; got %s",
+			Args:    []any{from.Email, gotSet.Create.From[0].Email},
 		}, {
-			Check:  to.Name != gotSet.Create.To[0].Name,
-			Format: "wanted to name %s; got %s",
-			Args:   []any{to.Name, gotSet.Create.To[0].Name},
+			Check:   to.Name != gotSet.Create.To[0].Name,
+			Message: "wanted to name %s; got %s",
+			Args:    []any{to.Name, gotSet.Create.To[0].Name},
 		}, {
-			Check:  to.Email != gotSet.Create.To[0].Email,
-			Format: "wanted to email %s; got %s",
-			Args:   []any{to.Email, gotSet.Create.To[0].Email},
+			Check:   to.Email != gotSet.Create.To[0].Email,
+			Message: "wanted to email %s; got %s",
+			Args:    []any{to.Email, gotSet.Create.To[0].Email},
 		}, {
-			Check:  msg.Subject != gotSet.Create.Subject,
-			Format: "wanted subject %s; got %s",
-			Args:   []any{msg.Subject, gotSet.Create.Subject},
+			Check:   msg.Subject != gotSet.Create.Subject,
+			Message: "wanted subject %s; got %s",
+			Args:    []any{msg.Subject, gotSet.Create.Subject},
 		}, {
-			Check:  msg.Body.Value != gotSet.Create.Body.Value,
-			Format: "wanted body value %s; got %s",
-			Args:   []any{msg.Body.Value, gotSet.Create.Body.Value},
+			Check:   msg.Body.Value != gotSet.Create.Body.Value,
+			Message: "wanted body value %s; got %s",
+			Args:    []any{msg.Body.Value, gotSet.Create.Body.Value},
 		}, {
-			Check:  bodyID != gotSet.Create.Body.ID,
-			Format: "wanted body id %v; got %v",
-			Args:   []any{bodyID, gotSet.Create.Body.ID},
+			Check:   bodyID != gotSet.Create.Body.ID,
+			Message: "wanted body id %v; got %v",
+			Args:    []any{bodyID, gotSet.Create.Body.ID},
 		}, {
-			Check:  s.Create.Keywords.Seen != gotSet.Create.Keywords.Seen,
-			Format: "wanted $seen boolean %t; got %t",
-			Args:   []any{s.Create.Keywords.Seen, gotSet.Create.Keywords.Seen},
+			Check:   s.Create.Keywords.Seen != gotSet.Create.Keywords.Seen,
+			Message: "wanted $seen boolean %t; got %t",
+			Args:    []any{s.Create.Keywords.Seen, gotSet.Create.Keywords.Seen},
 		}, {
-			Check:  s.Create.Keywords.Draft != gotSet.Create.Keywords.Draft,
-			Format: "wanted $draft boolean %t; got %t",
-			Args:   []any{s.Create.Keywords.Draft, gotSet.Create.Keywords.Draft},
+			Check:   s.Create.Keywords.Draft != gotSet.Create.Keywords.Draft,
+			Message: "wanted $draft boolean %t; got %t",
+			Args:    []any{s.Create.Keywords.Draft, gotSet.Create.Keywords.Draft},
 		}}
 
 		for _, c := range cases {
 			if c.Check {
-				t.Errorf(c.Format, c.Args...)
+				t.Errorf(c.Message, c.Args...)
 			}
 		}
 	})
@@ -323,25 +323,25 @@ func TestSetJSON(t *testing.T) {
 
 func TestNewBody(t *testing.T) {
 	value := "hello"
-	body, err := arguments.NewBody(arguments.TextPlain, value)
+	body, err := methods.NewBody(methods.TextPlain, value)
 	if err != nil {
 		t.Fatalf("failed to instantiate new body: %s", err.Error())
 	}
 	cases := []*utils.Case{{
-		Check:  body.Type != arguments.TextPlain,
-		Format: "wanted body type %s; got %s",
-		Args:   []any{arguments.TextPlain, body.Type},
+		Check:   body.Type != methods.TextPlain,
+		Message: "wanted body type %s; got %s",
+		Args:    []any{methods.TextPlain, body.Type},
 	}, {
-		Check:  body.ID == uuid.Nil,
-		Format: "body id must not be nil",
+		Check:   body.ID == uuid.Nil,
+		Message: "body id must not be nil",
 	}, {
-		Check:  body.Value != value,
-		Format: "wanted body value %s; got %s",
-		Args:   []any{value, body.Value},
+		Check:   body.Value != value,
+		Message: "wanted body value %s; got %s",
+		Args:    []any{value, body.Value},
 	}}
 	for _, c := range cases {
 		if c.Check {
-			t.Errorf(c.Format, c.Args...)
+			t.Errorf(c.Message, c.Args...)
 		}
 	}
 }

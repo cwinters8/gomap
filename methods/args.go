@@ -1,4 +1,4 @@
-package arguments
+package methods
 
 type Args interface {
 	Query | Set

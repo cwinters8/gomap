@@ -1,4 +1,4 @@
-package arguments
+package methods
 
 import (
 	"encoding/json"

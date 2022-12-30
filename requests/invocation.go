@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cwinters8/gomap/requests/arguments"
+	"github.com/cwinters8/gomap/methods"
 	"github.com/cwinters8/gomap/utils"
 
 	"github.com/google/uuid"
 )
 
-func NewInvocation[A arguments.Args](args A, prefix string, t MethodType) (*Invocation[A], error) {
+func NewInvocation[A methods.Args](args A, prefix string, t methods.MethodType) (*Invocation[A], error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate new uuid: %w", err)
 	}
 	return &Invocation[A]{
 		ID: id,
-		Method: &Method[A]{
+		Method: &methods.Method[A]{
 			Prefix: prefix,
 			Type:   t,
 			Args:   args,
@@ -26,29 +26,10 @@ func NewInvocation[A arguments.Args](args A, prefix string, t MethodType) (*Invo
 	}, nil
 }
 
-type Invocation[A arguments.Args] struct {
+type Invocation[A methods.Args] struct {
 	ID     uuid.UUID
-	Method *Method[A]
+	Method *methods.Method[A]
 }
-
-type Method[A arguments.Args] struct {
-	Prefix string
-	Type   MethodType
-	Args   A
-	Err    *Error
-}
-
-func (m Method[A]) Name() string {
-	return fmt.Sprintf("%s/%s", m.Prefix, m.Type)
-}
-
-type MethodType string
-
-const (
-	QueryMethod MethodType = "query"
-	GetMethod   MethodType = "get"
-	SetMethod   MethodType = "set"
-)
 
 type Error struct {
 	Type        string         `json:"type"`
@@ -83,15 +64,16 @@ func (i *Invocation[A]) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal raw args back to json: %w", err)
 	}
-	m := Method[A]{
+	m := methods.Method[A]{
 		Prefix: strings.Split(method, "/")[0],
 	}
+	// TODO: remove error handling here once no longer needed for reference
 	if method == "error" {
 		var methodErr Error
 		if err := json.Unmarshal(args, &methodErr); err != nil {
 			return fmt.Errorf("failed to unmarshal error: %w", err)
 		}
-		m.Err = &methodErr
+		// m.Err = &methodErr
 	} else {
 		var a A
 		if err := json.Unmarshal(args, &a); err != nil {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/cwinters8/gomap/client"
 	"github.com/cwinters8/gomap/mail"
-	"github.com/cwinters8/gomap/requests/arguments"
+	"github.com/cwinters8/gomap/methods"
 	"github.com/cwinters8/gomap/utils"
 )
 
@@ -36,11 +36,11 @@ func TestMailbox(t *testing.T) {
 			t.Fatalf("failed to instantiate new mailbox %s: %s", drafts, err.Error())
 		}
 		id, err := box.NewEmail(
-			&arguments.Address{
+			&methods.Address{
 				Name:  "Clark the Gopher",
 				Email: "dev@clarkwinters.com",
 			},
-			&arguments.Address{
+			&methods.Address{
 				Name:  "Tester McTesterson",
 				Email: "tester@clarkwinters.com",
 			},

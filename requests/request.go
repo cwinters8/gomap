@@ -4,19 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/cwinters8/gomap/client"
-	"github.com/cwinters8/gomap/requests/arguments"
+	"github.com/cwinters8/gomap/methods"
+	"github.com/cwinters8/gomap/results"
 	"github.com/cwinters8/gomap/utils"
 )
 
-type Request[A arguments.Args] struct {
+type Request[A methods.Args] struct {
 	Using        []Capability     `json:"using"`
 	Calls        []*Invocation[A] `json:"methodCalls"`
 	SessionState string           `json:"sessionState"`
 }
 
-func NewRequest[A arguments.Args](calls []*Invocation[A]) *Request[A] {
+func NewRequest[A methods.Args](calls []*Invocation[A]) *Request[A] {
 	return &Request[A]{
 		Using: []Capability{
 			UsingCore,
@@ -31,7 +33,7 @@ func (r *Request[A]) UseSubmission() {
 	r.Using = append(r.Using, UsingSubmission)
 }
 
-func (r *Request[A]) Send(c *client.Client) (*Response[A], error) {
+func (r *Request[A]) Send(c *client.Client) (*results.Results, error) {
 	b, err := json.Marshal(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal json from request: %w", err)
@@ -40,23 +42,18 @@ func (r *Request[A]) Send(c *client.Client) (*Response[A], error) {
 	if err != nil {
 		return nil, fmt.Errorf("status %d - http request failed: %w", status, err)
 	}
-	var resp Response[A]
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
-	}
-	var errs []Error
-	// check for method errors
-	for _, i := range resp.Results {
-		if i.Method.Err != nil {
-			errs = append(errs, *i.Method.Err)
+	if os.Getenv("RESPONSE_DEBUG") == "true" {
+		// write raw body to file to allow for examination of full response
+		if err := utils.WriteJSON("jmap_response", "../tmp/responses", body); err != nil {
+			fmt.Printf("warning: failed to write json response to file: %s\n", err.Error())
 		}
 	}
-	if len(errs) > 0 {
-		return nil, fmt.Errorf("found method errors: `%s`. %s", utils.Prettier(errs), utils.Describe(r.Calls))
+	var results results.Results
+	if err := json.Unmarshal(body, &results); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
-	return &resp, nil
-}
-
-type Response[A arguments.Args] struct {
-	Results []*Invocation[A] `json:"methodResponses"`
+	if len(results.Errors) > 0 {
+		return nil, fmt.Errorf("found method errors: `%s`", utils.Prettier(results.Errors))
+	}
+	return &results, nil
 }

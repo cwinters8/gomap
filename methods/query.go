@@ -1,4 +1,4 @@
-package arguments
+package methods
 
 type Query struct {
 	AccountID string   `json:"accountId"`

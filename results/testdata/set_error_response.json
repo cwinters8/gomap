@@ -1,0 +1,34 @@
+{
+  "latestClientVersion": "",
+  "methodResponses": [
+    [
+      "Email/set",
+      {
+        "destroyed": null,
+        "oldState": "3067",
+        "accountId": "u69394015",
+        "notDestroyed": null,
+        "newState": "3067",
+        "notUpdated": null,
+        "notCreated": {
+          "4f17fc1f-f68a-4d5a-84a8-13e20bdaef1a": {
+            "type": "invalidProperties",
+            "properties": ["#mailboxIds"]
+          }
+        },
+        "updated": null,
+        "created": null
+      },
+      "c5de7ad2-889e-44c3-a573-917d551dc856"
+    ],
+    [
+      "error",
+      {
+        "type": "invalidProperties",
+        "properties": ["onSuccessUpdateEmail/#sub"]
+      },
+      "5112cf7a-d596-4dbd-9f34-456873aea3ef"
+    ]
+  ],
+  "sessionState": "cyrus-0;p-7ad01f1bc4"
+}
