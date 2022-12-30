@@ -5,10 +5,12 @@ import (
 	"testing"
 
 	"github.com/cwinters8/gomap/client"
+	"github.com/cwinters8/gomap/mail"
 	"github.com/cwinters8/gomap/methods"
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/results"
 	"github.com/cwinters8/gomap/utils"
+	"github.com/google/uuid"
 )
 
 func TestSendRequest(t *testing.T) {
@@ -42,17 +44,20 @@ func TestSendRequest(t *testing.T) {
 			t.Fatalf("failed to cast result to Set. %s", utils.Describe(resp.Results[0]))
 		}
 
-		gotInboxID := q
-		wantInboxID := os.Getenv("FASTMAIL_INBOX_ID")
+		gotInboxID := q.Body.IDs[0]
+		wantInboxID, err := uuid.Parse(os.Getenv("FASTMAIL_INBOX_ID"))
+		if err != nil {
+			t.Fatalf("failed to parse inbox uuid: %s", err.Error())
+		}
 
 		cases := []*utils.Case{{
 			Check:   i.ID != q.ID,
 			Message: "wanted invocation id %s; got %s",
-			Args:    []any{i.ID, gotInv.ID},
+			Args:    []any{i.ID, q.ID},
 		}, {
-			Check:   i.Method.Prefix != gotInv.Method.Prefix,
+			Check:   i.Method.Prefix != q.Prefix,
 			Message: "wanted prefix %s; got %s",
-			Args:    []any{i.Method.Prefix, gotInv.Method.Prefix},
+			Args:    []any{i.Method.Prefix, q.Prefix},
 		}, {
 			Check:   wantInboxID != gotInboxID,
 			Message: "wanted inbox id %s; got %s",
@@ -65,8 +70,12 @@ func TestSendRequest(t *testing.T) {
 		}
 	})
 	t.Run("set", func(t *testing.T) {
+		box, err := mail.NewMailbox(c, "Drafts")
+		if err != nil {
+			t.Fatalf("failed to get Drafts mailbox: %s", err.Error())
+		}
 		msg, err := methods.NewMessage(
-			methods.Mailboxes{"Drafts"},
+			methods.Mailboxes{box.ID},
 			&methods.Address{
 				Name:  "Gopher Clark",
 				Email: "dev@clarkwinters.com",
