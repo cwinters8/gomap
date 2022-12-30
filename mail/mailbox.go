@@ -6,13 +6,14 @@ import (
 	"github.com/cwinters8/gomap/client"
 	"github.com/cwinters8/gomap/methods"
 	"github.com/cwinters8/gomap/requests"
+	"github.com/cwinters8/gomap/results"
 	"github.com/cwinters8/gomap/utils"
 
 	"github.com/google/uuid"
 )
 
 type Mailbox struct {
-	ID     string      `json:"id"`
+	ID     uuid.UUID   `json:"id"`
 	Name   string      `json:"name"`
 	Emails []uuid.UUID // IDs of emails associated with this mailbox
 	Client *client.Client
@@ -53,7 +54,11 @@ func (m *Mailbox) Query() error {
 	if err != nil {
 		return fmt.Errorf("failed to send query request: %w", err)
 	}
-	m.ID = resp.Results[0].Method.Args.IDs[0]
+	q, ok := resp.Results[0].(*results.Query)
+	if !ok {
+		return fmt.Errorf("failed to cast result as Query. %s", utils.Describe(resp.Results[0]))
+	}
+	m.ID = q.Body.IDs[0]
 	return nil
 }
 
@@ -94,11 +99,15 @@ func (m *Mailbox) NewEmail(from, to *methods.Address, subject, msg string) (uuid
 	if len(resp.Results) < 1 {
 		return uuid.Nil, fmt.Errorf("results slice is empty")
 	}
-	create := resp.Results[0].Method.Args.Create
-	if create == nil {
-		return uuid.Nil, fmt.Errorf("result method's Create message is nil")
+	s, ok := resp.Results[0].(*results.Set)
+	if !ok {
+		return uuid.Nil, fmt.Errorf("failed to cast result to Set. %s", utils.Describe(resp.Results[0]))
 	}
-	id := resp.Results[0].Method.Args.Create.ID
+	created := s.Body.Created
+	if created == nil {
+		return uuid.Nil, fmt.Errorf("result body's Created field is nil")
+	}
+	id := created.ID
 	m.Emails = append(m.Emails, id)
 	return id, utils.ErrNotImplemented
 }

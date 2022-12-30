@@ -7,6 +7,7 @@ import (
 	"github.com/cwinters8/gomap/client"
 	"github.com/cwinters8/gomap/methods"
 	"github.com/cwinters8/gomap/requests"
+	"github.com/cwinters8/gomap/results"
 	"github.com/cwinters8/gomap/utils"
 )
 
@@ -36,13 +37,16 @@ func TestSendRequest(t *testing.T) {
 			t.Fatalf("failed to send request: %s", err.Error())
 		}
 
-		result := resp.Results[0]
+		q, ok := resp.Results[0].(*results.Query)
+		if !ok {
+			t.Fatalf("failed to cast result to Set. %s", utils.Describe(resp.Results[0]))
+		}
 
-		gotInboxID := result
+		gotInboxID := q
 		wantInboxID := os.Getenv("FASTMAIL_INBOX_ID")
 
 		cases := []*utils.Case{{
-			Check:   i.ID != gotInv.ID,
+			Check:   i.ID != q.ID,
 			Message: "wanted invocation id %s; got %s",
 			Args:    []any{i.ID, gotInv.ID},
 		}, {

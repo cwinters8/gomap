@@ -14,7 +14,6 @@ type Result interface {
 	Name() string
 	Method() (string, error)
 	Parse(any) error
-	UnmarshalJSON([]byte) error
 }
 
 type Error struct {
@@ -99,21 +98,25 @@ func (r *Results) UnmarshalJSON(b []byte) error {
 				return fmt.Errorf("unsupported method `%s`. non-error methods must be in the format `Type/action`", method)
 			}
 			action := methodTypes[1]
-
+			var result Result
 			switch action {
-			// TODO: handle query actions
-			case "set":
-				s := Set{
+			case "query":
+				result = &Query{
 					ID:     id,
 					Prefix: methodTypes[0],
 				}
-				if err := s.Parse(resp[1]); err != nil {
-					return fmt.Errorf("failed to parse set body: %w", err)
+			case "set":
+				result = &Set{
+					ID:     id,
+					Prefix: methodTypes[0],
 				}
-				r.Results = append(r.Results, &s)
 			default:
 				return fmt.Errorf("unsupported action `%s`", action)
 			}
+			if err := result.Parse(resp[1]); err != nil {
+				return fmt.Errorf("failed to parse set body: %w", err)
+			}
+			r.Results = append(r.Results, result)
 		}
 	}
 	return nil

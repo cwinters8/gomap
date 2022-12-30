@@ -47,7 +47,7 @@ func NewMessage(mailboxes Mailboxes, from, to *Address, subject, msg string) (*M
 	}, nil
 }
 
-type Mailboxes []string
+type Mailboxes []uuid.UUID
 
 type Body struct {
 	ID        uuid.UUID
@@ -210,7 +210,7 @@ func (m *Message) UnmarshalJSON(b []byte) error {
 }
 
 func (m Mailboxes) MarshalJSON() ([]byte, error) {
-	boxes := map[string]bool{}
+	boxes := map[uuid.UUID]bool{}
 	for _, v := range m {
 		boxes[v] = true
 	}
@@ -218,7 +218,7 @@ func (m Mailboxes) MarshalJSON() ([]byte, error) {
 }
 
 func (m *Mailboxes) UnmarshalJSON(b []byte) error {
-	var boxes map[string]bool
+	var boxes map[uuid.UUID]bool
 	if err := json.Unmarshal(b, &boxes); err != nil {
 		return fmt.Errorf("failed to unmarshal mailboxes: %w", err)
 	}

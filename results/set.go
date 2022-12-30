@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/cwinters8/gomap/utils"
-
 	"github.com/google/uuid"
 )
 
@@ -26,13 +24,10 @@ func (s *Set) Method() (string, error) {
 	return fmt.Sprintf("%s/set", s.Prefix), nil
 }
 
-func (s *Set) UnmarshalJSON(b []byte) error {
-	return utils.ErrNotImplemented
-}
 func (s *Set) Parse(rawBody any) error {
-	b, err := json.Marshal(rawBody)
+	b, err := parseBytes(rawBody)
 	if err != nil {
-		return fmt.Errorf("failed to marshal set body to json: %w", err)
+		return fmt.Errorf("failed to parse bytes from raw body: %w", err)
 	}
 	var body SetBody
 	if err := json.Unmarshal(b, &body); err != nil {
