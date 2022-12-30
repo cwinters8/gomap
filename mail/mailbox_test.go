@@ -8,6 +8,7 @@ import (
 	"github.com/cwinters8/gomap/mail"
 	"github.com/cwinters8/gomap/methods"
 	"github.com/cwinters8/gomap/utils"
+	"github.com/google/uuid"
 )
 
 func TestMailbox(t *testing.T) {
@@ -24,7 +25,10 @@ func TestMailbox(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to instantiate new mailbox %s: %s", inbox, err.Error())
 		}
-		wantID := os.Getenv("FASTMAIL_INBOX_ID")
+		wantID, err := uuid.Parse(os.Getenv("FASTMAIL_INBOX_ID"))
+		if err != nil {
+			t.Fatalf("failed to parse uuid: %s", err.Error())
+		}
 		if wantID != box.ID {
 			t.Errorf("wanted ID %s; got ID %s", wantID, box.ID)
 		}

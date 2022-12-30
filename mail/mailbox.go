@@ -109,7 +109,7 @@ func (m *Mailbox) NewEmail(from, to *methods.Address, subject, msg string) (uuid
 	}
 	id := created.ID
 	m.Emails = append(m.Emails, id)
-	return id, utils.ErrNotImplemented
+	return id, nil
 }
 
 func (m Mailbox) MarshalJSON() ([]byte, error) {
