@@ -11,8 +11,12 @@ import (
 )
 
 func TestNewMessage(t *testing.T) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatalf("failed to generate new uuid: %s", err.Error())
+	}
 	msg, err := methods.NewMessage(
-		[]string{"xyz-box"},
+		methods.Mailboxes{id},
 		&methods.Address{
 			Name:  "Clark the Gopher",
 			Email: "dev@clarkwinters.com",
@@ -30,19 +34,30 @@ func TestNewMessage(t *testing.T) {
 	if msg.Keywords == nil {
 		t.Fatalf("Keywords must not be nil")
 	}
-	cases := []*utils.Case{{
-		Check:   !msg.Keywords.Seen,
-		Message: "$seen keyword value should be true",
-	}, {
-		Check:   !msg.Keywords.Draft,
-		Message: "$draft keyword value should be true",
-	}, {
-		Check:   msg.ID == uuid.Nil,
-		Message: "message ID must not be nil",
-	}, {
-		Check:   msg.Body.ID == uuid.Nil,
-		Message: "message body ID must not be nil",
-	}}
+	boxes := *msg.MailboxIDs
+	cases := []*utils.Case{
+		{
+			Check:   !msg.Keywords.Seen,
+			Message: "$seen keyword value should be true",
+		},
+		{
+			Check:   !msg.Keywords.Draft,
+			Message: "$draft keyword value should be true",
+		},
+		{
+			Check:   msg.ID == uuid.Nil,
+			Message: "message ID must not be nil",
+		},
+		{
+			Check:   msg.Body.ID == uuid.Nil,
+			Message: "message body ID must not be nil",
+		},
+		utils.NewCase(
+			boxes[0] != id,
+			"wanted mailbox id %s; got %s",
+			id, boxes[0],
+		),
+	}
 	for _, c := range cases {
 		if c.Check {
 			t.Errorf(c.Message, c.Args...)
@@ -61,9 +76,12 @@ func TestSetJSON(t *testing.T) {
 		Email: "tester@clarkwinters.com",
 	}
 
-	boxName := "xyz-box"
+	boxID, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatalf("failed to generate new uuid: %s", err.Error())
+	}
 	msg, err := methods.NewMessage(
-		[]string{boxName},
+		methods.Mailboxes{boxID},
 		&from,
 		&to,
 		"the meaning of life, the universe, and everything",
@@ -127,18 +145,22 @@ func TestSetJSON(t *testing.T) {
 		if !ok {
 			t.Fatalf("failed to coerce mailbox ids map. %s", utils.Describe(gotEmail["mailboxIds"]))
 		}
-		var boxID string
+		var boxes []uuid.UUID
 		for k, v := range gotMailboxes {
 			value, ok := v.(bool)
 			if !ok {
 				t.Fatalf("failed to coerce mailbox value to bool. %s", utils.Describe(v))
 			}
-			if k == wantMailbox && value {
-				boxID = k
+			id, err := uuid.Parse(k)
+			if err != nil {
+				t.Fatalf("failed to parse uuid from key `%s`", k)
+			}
+			if id == wantMailbox && value {
+				boxes = append(boxes, id)
 				break
 			}
 		}
-		if len(boxID) < 1 {
+		if len(boxes) < 1 {
 			t.Fatalf("mailbox ID %s not found", wantMailbox)
 		}
 		// validate keywords
@@ -271,47 +293,49 @@ func TestSetJSON(t *testing.T) {
 			Check:   id != gotSet.Create.ID,
 			Message: "wanted message id %v; got %v",
 			Args:    []any{id, gotSet.Create.ID},
-		}, {
-			Check:   boxName != gotBoxes[0],
-			Message: "wanted mailbox id %s; got %s",
-			Args:    []any{boxName, gotBoxes[0]},
-		}, {
-			Check:   from.Name != gotSet.Create.From[0].Name,
-			Message: "wanted from name %s; got %s",
-			Args:    []any{from.Name, gotSet.Create.From[0].Name},
-		}, {
-			Check:   from.Email != gotSet.Create.From[0].Email,
-			Message: "wanted from email %s; got %s",
-			Args:    []any{from.Email, gotSet.Create.From[0].Email},
-		}, {
-			Check:   to.Name != gotSet.Create.To[0].Name,
-			Message: "wanted to name %s; got %s",
-			Args:    []any{to.Name, gotSet.Create.To[0].Name},
-		}, {
-			Check:   to.Email != gotSet.Create.To[0].Email,
-			Message: "wanted to email %s; got %s",
-			Args:    []any{to.Email, gotSet.Create.To[0].Email},
-		}, {
-			Check:   msg.Subject != gotSet.Create.Subject,
-			Message: "wanted subject %s; got %s",
-			Args:    []any{msg.Subject, gotSet.Create.Subject},
-		}, {
-			Check:   msg.Body.Value != gotSet.Create.Body.Value,
-			Message: "wanted body value %s; got %s",
-			Args:    []any{msg.Body.Value, gotSet.Create.Body.Value},
-		}, {
-			Check:   bodyID != gotSet.Create.Body.ID,
-			Message: "wanted body id %v; got %v",
-			Args:    []any{bodyID, gotSet.Create.Body.ID},
-		}, {
-			Check:   s.Create.Keywords.Seen != gotSet.Create.Keywords.Seen,
-			Message: "wanted $seen boolean %t; got %t",
-			Args:    []any{s.Create.Keywords.Seen, gotSet.Create.Keywords.Seen},
-		}, {
-			Check:   s.Create.Keywords.Draft != gotSet.Create.Keywords.Draft,
-			Message: "wanted $draft boolean %t; got %t",
-			Args:    []any{s.Create.Keywords.Draft, gotSet.Create.Keywords.Draft},
-		}}
+		},
+			utils.NewCase(
+				boxID != gotBoxes[0],
+				"wanted mailbox id %s; got %s",
+				boxID, gotBoxes[0],
+			),
+			{
+				Check:   from.Name != gotSet.Create.From[0].Name,
+				Message: "wanted from name %s; got %s",
+				Args:    []any{from.Name, gotSet.Create.From[0].Name},
+			}, {
+				Check:   from.Email != gotSet.Create.From[0].Email,
+				Message: "wanted from email %s; got %s",
+				Args:    []any{from.Email, gotSet.Create.From[0].Email},
+			}, {
+				Check:   to.Name != gotSet.Create.To[0].Name,
+				Message: "wanted to name %s; got %s",
+				Args:    []any{to.Name, gotSet.Create.To[0].Name},
+			}, {
+				Check:   to.Email != gotSet.Create.To[0].Email,
+				Message: "wanted to email %s; got %s",
+				Args:    []any{to.Email, gotSet.Create.To[0].Email},
+			}, {
+				Check:   msg.Subject != gotSet.Create.Subject,
+				Message: "wanted subject %s; got %s",
+				Args:    []any{msg.Subject, gotSet.Create.Subject},
+			}, {
+				Check:   msg.Body.Value != gotSet.Create.Body.Value,
+				Message: "wanted body value %s; got %s",
+				Args:    []any{msg.Body.Value, gotSet.Create.Body.Value},
+			}, {
+				Check:   bodyID != gotSet.Create.Body.ID,
+				Message: "wanted body id %v; got %v",
+				Args:    []any{bodyID, gotSet.Create.Body.ID},
+			}, {
+				Check:   s.Create.Keywords.Seen != gotSet.Create.Keywords.Seen,
+				Message: "wanted $seen boolean %t; got %t",
+				Args:    []any{s.Create.Keywords.Seen, gotSet.Create.Keywords.Seen},
+			}, {
+				Check:   s.Create.Keywords.Draft != gotSet.Create.Keywords.Draft,
+				Message: "wanted $draft boolean %t; got %t",
+				Args:    []any{s.Create.Keywords.Draft, gotSet.Create.Keywords.Draft},
+			}}
 
 		for _, c := range cases {
 			if c.Check {
