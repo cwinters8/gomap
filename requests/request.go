@@ -7,19 +7,18 @@ import (
 	"os"
 
 	"github.com/cwinters8/gomap/client"
-	"github.com/cwinters8/gomap/methods"
 	"github.com/cwinters8/gomap/results"
 	"github.com/cwinters8/gomap/utils"
 )
 
-type Request[A methods.Args] struct {
-	Using        []Capability     `json:"using"`
-	Calls        []*Invocation[A] `json:"methodCalls"`
-	SessionState string           `json:"sessionState"`
+type Request struct {
+	Using        []Capability `json:"using"`
+	Calls        []Call       `json:"methodCalls"`
+	SessionState string       `json:"sessionState"`
 }
 
-func NewRequest[A methods.Args](calls []*Invocation[A]) *Request[A] {
-	return &Request[A]{
+func NewRequest(calls []Call) *Request {
+	return &Request{
 		Using: []Capability{
 			UsingCore,
 			UsingMail,
@@ -29,11 +28,11 @@ func NewRequest[A methods.Args](calls []*Invocation[A]) *Request[A] {
 }
 
 // adds the submission capability to the r.Using slice
-func (r *Request[A]) UseSubmission() {
+func (r *Request) UseSubmission() {
 	r.Using = append(r.Using, UsingSubmission)
 }
 
-func (r *Request[A]) Send(c *client.Client) (*results.Results, error) {
+func (r *Request) Send(c *client.Client) (*results.Results, error) {
 	b, err := json.Marshal(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal json from request: %w", err)
