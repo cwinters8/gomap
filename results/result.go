@@ -19,6 +19,7 @@ type Result interface {
 type Error struct {
 	ID          uuid.UUID      `json:"-"`
 	Type        string         `json:"type"`
+	Description string         `json:"description"`
 	Properties  []string       `json:"properties"`
 	MoreDetails map[string]any `json:"moreDetails"`
 }
@@ -36,6 +37,12 @@ func (e *Error) Parse(a any) error {
 				return fmt.Errorf("failed to coerce type to string. %s", utils.Describe(m["type"]))
 			}
 			e.Type = t
+		case "description":
+			d, ok := v.(string)
+			if !ok {
+				return fmt.Errorf("failed to cast description to string. %s", utils.Describe(v))
+			}
+			e.Description = d
 		case "properties":
 			props, ok := m["properties"].([]any)
 			if !ok {

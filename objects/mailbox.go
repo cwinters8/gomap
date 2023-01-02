@@ -20,5 +20,3 @@ func (m Mailbox) Name() string {
 func (m Mailbox) Map() map[string]any {
 	return nil
 }
-
-func (m Mailbox) Call()

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/cwinters8/gomap/client"
+	"github.com/cwinters8/gomap/objects"
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/results"
 	"github.com/cwinters8/gomap/utils"
@@ -62,8 +63,6 @@ func TestSendRequest(t *testing.T) {
 		}
 	})
 	t.Run("set", func(t *testing.T) {
-		t.Fatalf("not implemented")
-
 		query, err := requests.NewQuery(c.Session.PrimaryAccounts.Mail, "Mailbox", "Drafts")
 		if err != nil {
 			t.Fatalf("failed to instantiate new Query: %s", err.Error())
@@ -76,30 +75,61 @@ func TestSendRequest(t *testing.T) {
 		if !ok {
 			t.Fatalf("failed to cast result to Query. %s", utils.Describe(resp.Results[0]))
 		}
-
-		// msg, err := methods.NewMessage(
-		// 	methods.Mailboxes{box.ID},
-		// 	&methods.Address{
-		// 		Name:  "Gopher Clark",
-		// 		Email: "dev@clarkwinters.com",
-		// 	},
-		// 	&methods.Address{
-		// 		Name:  "Request the Setter",
-		// 		Email: "tester@clarkwinters.com",
-		// 	},
-		// 	"requesting Email/set",
-		// 	"attempting to make a request to create a new email",
-		// )
-		// if err != nil {
-		// 	t.Fatalf("failed to instantiate new message: %s", err.Error())
-		// }
-		// set := methods.Set{
-		// 	AccountID: c.Session.PrimaryAccounts.Mail,
-		// 	Create:    msg,
-		// }
-		// _, err = requests.NewInvocation(set, "Email", methods.SetMethod)
-		// if err != nil {
-		// 	t.Fatalf("failed to instantiate new invocation: %s", err.Error())
-		// }
+		wantEmail := objects.Email{
+			MailboxIDs: q.Body.IDs,
+			From: &objects.Address{
+				Name:  "Gopher Clark",
+				Email: "dev@clarkwinters.com",
+			},
+			To: []*objects.Address{{
+				Name:  "Request the Setter",
+				Email: "tester@clarkwinters.com",
+			}},
+			Subject: "requesting email/set",
+			Body: &objects.Body{
+				Type:  objects.TextPlain,
+				Value: "attempt to create a new draft email",
+			},
+		}
+		email, err := objects.NewEmail(
+			wantEmail.MailboxIDs,
+			wantEmail.From,
+			wantEmail.To,
+			wantEmail.Subject,
+			wantEmail.Body.Value,
+			wantEmail.Body.Type,
+		)
+		if err != nil {
+			t.Fatalf("failed to create new email: %s", err.Error())
+		}
+		set, err := requests.NewSet(c.Session.PrimaryAccounts.Mail, email)
+		if err != nil {
+			t.Fatalf("failed to instantiate new set: %s", err.Error())
+		}
+		result, err := requests.NewRequest([]requests.Call{set}).Send(c)
+		if err != nil {
+			t.Fatalf("request failure: %s", err.Error())
+		}
+		s, ok := result.Results[0].(*results.Set)
+		if !ok {
+			t.Fatalf("failed to cast result to set. %s", utils.Describe(result.Results[0]))
+		}
+		if s.Body.Created == nil {
+			t.Fatalf("Body.Created is nil. remaining Body attributes: %v", *s.Body)
+		}
+		cases := utils.Cases{
+			utils.NewCase(
+				s.Body.Created.ID == uuid.Nil,
+				"wanted Body.Created.ID to be a non-nil uuid; got nil value",
+			),
+			utils.NewCase(
+				s.Body.NotCreated != nil,
+				"wanted Body.NotCreated to be nil; got %v",
+				s.Body.NotCreated,
+			),
+		}
+		cases.Iterator(func(c *utils.Case) {
+			t.Error(c.Message)
+		})
 	})
 }

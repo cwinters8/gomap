@@ -42,8 +42,12 @@ func (r *Request) Send(c *client.Client) (*results.Results, error) {
 		return nil, fmt.Errorf("status %d - http request failed: %w", status, err)
 	}
 	if os.Getenv("RESPONSE_DEBUG") == "true" {
-		// write raw body to file to allow for examination of full response
-		if err := utils.WriteJSON("jmap_response", "../tmp/responses", body); err != nil {
+		// write raw json to file to allow for examination of full request and response
+		raw := map[string][]byte{
+			"request":  b,
+			"response": body,
+		}
+		if err := utils.WriteJSON("jmap", "../tmp/raw", raw); err != nil {
 			fmt.Printf("warning: failed to write json response to file: %s\n", err.Error())
 		}
 	}

@@ -45,7 +45,7 @@ func (s Set) Method() (string, error) {
 func (s Set) BodyMap() map[string]any {
 	return map[string]any{
 		"accountId": s.Body.AccountID,
-		"create":    s.Body.Create,
+		"create":    s.Body.Create.Map(),
 	}
 }
 

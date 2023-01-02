@@ -52,16 +52,12 @@ type Created struct {
 }
 
 func (c *Created) UnmarshalJSON(b []byte) error {
-	var m map[string]created
+	var m map[uuid.UUID]created
 	if err := json.Unmarshal(b, &m); err != nil {
 		return fmt.Errorf("failed to unmarshal json to map: %w", err)
 	}
 	for k, v := range m {
-		id, err := uuid.Parse(k)
-		if err != nil {
-			return fmt.Errorf("failed to parse key `%s` as uuid: %w", k, err)
-		}
-		c.ID = id
+		c.ID = k
 		c.created = v
 		break // map should have a single key, so only need first iteration
 	}
@@ -81,16 +77,12 @@ type NotCreated struct {
 }
 
 func (nc *NotCreated) UnmarshalJSON(b []byte) error {
-	var m map[string]notCreated
+	var m map[uuid.UUID]notCreated
 	if err := json.Unmarshal(b, &m); err != nil {
 		return fmt.Errorf("failed to unmarshal json to map: %w", err)
 	}
 	for k, v := range m {
-		id, err := uuid.Parse(k)
-		if err != nil {
-			return fmt.Errorf("failed to parse key `%s` as uuid: %w", k, err)
-		}
-		nc.ID = id
+		nc.ID = k
 		nc.notCreated = v
 		break // map should have a single key, so only need first iteration
 	}
