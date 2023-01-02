@@ -38,10 +38,10 @@ func (q *Query) Parse(rawBody any) error {
 }
 
 type QueryBody struct {
-	AccountID string      `json:"accountId"`
-	IDs       []uuid.UUID `json:"ids"`
-	Total     int         `json:"total"`
-	Filter    *Filter     `json:"filter"`
+	AccountID string   `json:"accountId"`
+	IDs       []string `json:"ids"`
+	Total     int      `json:"total"`
+	Filter    *Filter  `json:"filter"`
 }
 
 type Filter struct {

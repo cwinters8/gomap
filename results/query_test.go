@@ -5,7 +5,6 @@ import (
 
 	"github.com/cwinters8/gomap/results"
 	"github.com/cwinters8/gomap/utils"
-	"github.com/google/uuid"
 )
 
 func TestParseQuery(t *testing.T) {
@@ -28,16 +27,12 @@ func TestParseQuery(t *testing.T) {
 	if err := q.Parse(rawBody); err != nil {
 		t.Fatalf("failed to parse query body: %s", err.Error())
 	}
-	id, err := uuid.Parse("60b77041-ee8f-4429-aaf7-39b94d40c9eb")
-	if err != nil {
-		t.Fatalf("failed to parse uuid: %s", err.Error())
-	}
 	want := results.QueryBody{
 		AccountID: "u69394015",
 		Filter: &results.Filter{
 			Name: "Drafts",
 		},
-		IDs:   []uuid.UUID{id},
+		IDs:   []string{"60b77041-ee8f-4429-aaf7-39b94d40c9eb"},
 		Total: 1,
 	}
 	got := q.Body

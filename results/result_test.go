@@ -104,10 +104,7 @@ func TestRequestResults(t *testing.T) {
 		if !ok {
 			t.Fatalf("failed to case result to Query. %s", utils.Describe(resp.Results[0]))
 		}
-		wantBoxID, err := uuid.Parse(os.Getenv("FASTMAIL_INBOX_ID"))
-		if err != nil {
-			t.Fatalf("failed to parse inbox uuid: %s", err.Error())
-		}
+		wantBoxID := os.Getenv("FASTMAIL_INBOX_ID")
 		cases := []*utils.Case{
 			utils.NewCase(
 				got.ID != query.ID,
@@ -161,7 +158,7 @@ func TestRequestResults(t *testing.T) {
 			t.Fatalf("failed to case result to Query. %s", utils.Describe(resp.Results[0]))
 		}
 		email, err := objects.NewEmail(
-			[]uuid.UUID{result.Body.IDs[0]},
+			[]string{result.Body.IDs[0]},
 			&objects.Address{
 				Name:  "Gopher Clark",
 				Email: "dev@clarkwinters.com",

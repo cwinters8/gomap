@@ -7,8 +7,9 @@ import (
 )
 
 type Email struct {
-	ID         uuid.UUID
-	MailboxIDs []uuid.UUID
+	ID         string
+	RequestID  uuid.UUID
+	MailboxIDs []string
 	Keywords   *Keywords
 	From       *Address
 	To         []*Address
@@ -16,7 +17,7 @@ type Email struct {
 	Body       *Body
 }
 
-func NewEmail(boxIDs []uuid.UUID, from *Address, to []*Address, subject, body string, bodyType BodyType) (Email, error) {
+func NewEmail(boxIDs []string, from *Address, to []*Address, subject, body string, bodyType BodyType) (Email, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return NilEmail, fmt.Errorf("failed to generate new uuid: %w", err)
@@ -26,7 +27,7 @@ func NewEmail(boxIDs []uuid.UUID, from *Address, to []*Address, subject, body st
 		return NilEmail, fmt.Errorf("failed to generate new uuid for body: %w", err)
 	}
 	return Email{
-		ID:         id,
+		RequestID:  id,
 		MailboxIDs: boxIDs,
 		Keywords: &Keywords{
 			Seen:  true,
@@ -43,8 +44,8 @@ func NewEmail(boxIDs []uuid.UUID, from *Address, to []*Address, subject, body st
 	}, nil
 }
 
-func (e Email) GetID() uuid.UUID {
-	return e.ID
+func (e Email) GetReqID() uuid.UUID {
+	return e.RequestID
 }
 
 func (e Email) Name() string {
@@ -52,12 +53,12 @@ func (e Email) Name() string {
 }
 
 func (e Email) Map() map[uuid.UUID]map[string]any {
-	boxes := map[uuid.UUID]bool{}
+	boxes := map[string]bool{}
 	for _, m := range e.MailboxIDs {
 		boxes[m] = true
 	}
 	return map[uuid.UUID]map[string]any{
-		e.ID: {
+		e.RequestID: {
 			"mailboxIds": boxes,
 			"from":       []*Address{e.From},
 			"to":         e.To,

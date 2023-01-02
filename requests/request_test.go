@@ -38,11 +38,7 @@ func TestSendRequest(t *testing.T) {
 		}
 
 		gotInboxID := q.Body.IDs[0]
-		wantInboxID, err := uuid.Parse(os.Getenv("FASTMAIL_INBOX_ID"))
-		if err != nil {
-			t.Fatalf("failed to parse inbox uuid: %s", err.Error())
-		}
-
+		wantInboxID := os.Getenv("FASTMAIL_INBOX_ID")
 		cases := []*utils.Case{{
 			Check:   query.ID != q.ID,
 			Message: "wanted invocation id %s; got %s",
