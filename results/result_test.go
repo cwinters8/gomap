@@ -6,8 +6,7 @@ import (
 	"testing"
 
 	"github.com/cwinters8/gomap/client"
-	"github.com/cwinters8/gomap/mail"
-	"github.com/cwinters8/gomap/methods"
+	"github.com/cwinters8/gomap/objects"
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/results"
 	"github.com/cwinters8/gomap/utils"
@@ -93,17 +92,11 @@ func TestRequestResults(t *testing.T) {
 	}
 
 	t.Run("query", func(t *testing.T) {
-		q := methods.Query{
-			AccountID: c.Session.PrimaryAccounts.Mail,
-			Filter: methods.Filter{
-				Name: "Inbox",
-			},
-		}
-		i, err := requests.NewInvocation(q, "Mailbox", methods.QueryMethod)
+		query, err := requests.NewQuery(c.Session.PrimaryAccounts.Mail, "Mailbox", "Inbox")
 		if err != nil {
-			t.Fatalf("failed to instantiate new invocation: %s", err.Error())
+			t.Fatalf("failed to instantiate new query: %s", err.Error())
 		}
-		resp, err := requests.NewRequest([]*requests.Invocation[methods.Query]{i}).Send(c)
+		resp, err := requests.NewRequest([]requests.Call{query}).Send(c)
 		if err != nil {
 			t.Fatalf("request failure: %s", err.Error())
 		}
@@ -117,19 +110,19 @@ func TestRequestResults(t *testing.T) {
 		}
 		cases := []*utils.Case{
 			utils.NewCase(
-				got.ID != i.ID,
+				got.ID != query.ID,
 				"wanted id %s; got %s",
-				i.ID, got.ID,
+				query.ID, got.ID,
 			),
 			utils.NewCase(
-				got.Prefix != i.Method.Prefix,
+				got.Prefix != query.Prefix,
 				"wanted method prefix %s; got %s",
-				i.Method.Prefix, got.Prefix,
+				query.Prefix, got.Prefix,
 			),
 			utils.NewCase(
-				got.Body.AccountID != q.AccountID,
+				got.Body.AccountID != query.Body.AccountID,
 				"wanted account id %s; got %s",
-				q.AccountID, got.Body.AccountID,
+				query.Body.AccountID, got.Body.AccountID,
 			),
 			utils.NewCase(
 				got.Body.IDs[0] != wantBoxID,
@@ -137,9 +130,9 @@ func TestRequestResults(t *testing.T) {
 				wantBoxID, got.Body.IDs[0],
 			),
 			utils.NewCase(
-				got.Body.Filter.Name != q.Filter.Name,
+				got.Body.Filter.Name != query.Body.Filter.Name,
 				"wanted name filter %s; got %s",
-				q.Filter.Name, got.Body.Filter.Name,
+				query.Body.Filter.Name, got.Body.Filter.Name,
 			),
 			utils.NewCase(
 				got.Body.Total != 1,
@@ -155,34 +148,39 @@ func TestRequestResults(t *testing.T) {
 	})
 
 	t.Run("set", func(t *testing.T) {
-		box, err := mail.NewMailbox(c, "Drafts")
+		query, err := requests.NewQuery(c.Session.PrimaryAccounts.Mail, "Mailbox", "Drafts")
 		if err != nil {
-			t.Fatalf("failed to instantiate new mailbox: %s", err.Error())
+			t.Fatalf("failed to instantiate new query: %s", err.Error())
 		}
-		msg, err := methods.NewMessage(
-			methods.Mailboxes{box.ID},
-			&methods.Address{
+		resp, err := requests.NewRequest([]requests.Call{query}).Send(c)
+		if err != nil {
+			t.Fatalf("request failure: %s", err.Error())
+		}
+		result, ok := resp.Results[0].(*results.Query)
+		if !ok {
+			t.Fatalf("failed to case result to Query. %s", utils.Describe(resp.Results[0]))
+		}
+		email, err := objects.NewEmail(
+			[]uuid.UUID{result.Body.IDs[0]},
+			&objects.Address{
 				Name:  "Gopher Clark",
 				Email: "dev@clarkwinters.com",
-			}, &methods.Address{
+			}, []*objects.Address{{
 				Name:  "Setter Tester",
 				Email: "tester@clarkwinters.com",
-			},
+			}},
 			"hope this works",
 			"trying to parse result of set request to json",
+			objects.TextPlain,
 		)
 		if err != nil {
-			t.Fatalf("failed to instantiate new message: %s", err.Error())
+			t.Fatalf("failed to instantiate new email: %s", err.Error())
 		}
-		set := methods.Set{
-			AccountID: c.Session.PrimaryAccounts.Mail,
-			Create:    msg,
-		}
-		i, err := requests.NewInvocation(set, "Email", methods.SetMethod)
+		set, err := requests.NewSet(c.Session.PrimaryAccounts.Mail, email)
 		if err != nil {
-			t.Fatalf("failed to instantiate new invocation: %s", err.Error())
+			t.Fatalf("failed to instantiate new set: %s", err.Error())
 		}
-		req := requests.NewRequest([]*requests.Invocation[methods.Set]{i})
+		req := requests.NewRequest([]requests.Call{set})
 		got, err := req.Send(c)
 		if err != nil {
 			t.Fatalf("request failed: %s", err.Error())
@@ -204,11 +202,11 @@ func TestRequestResults(t *testing.T) {
 		if s.Body.Created == nil {
 			t.Fatalf("created field in body is nil")
 		}
-		cases := []*utils.Case{
+		cases := utils.Cases{
 			utils.NewCase(
-				s.Body.AccountID != set.AccountID,
+				s.Body.AccountID != set.Body.AccountID,
 				"wanted account id %s; got %s",
-				set.AccountID, s.Body.AccountID,
+				set.Body.AccountID, s.Body.AccountID,
 			),
 			utils.NewCase(
 				len(s.Body.Created.ID) != 16,
@@ -221,10 +219,8 @@ func TestRequestResults(t *testing.T) {
 				s.Body.NotCreated,
 			),
 		}
-		for _, c := range cases {
-			if c.Check {
-				t.Error(c.Message)
-			}
-		}
+		cases.Iterator(func(c *utils.Case) {
+			t.Error(c.Message)
+		})
 	})
 }
