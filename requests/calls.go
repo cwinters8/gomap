@@ -31,3 +31,8 @@ func marshalJSON(c Call) ([]byte, error) {
 	}
 	return json.Marshal(s)
 }
+
+func MarshalCall(id uuid.UUID, method string, body map[string]any) ([]byte, error) {
+	s := [3]any{method, body, id}
+	return json.Marshal(s)
+}

@@ -1,4 +1,4 @@
-package objects
+package emails
 
 import (
 	"fmt"

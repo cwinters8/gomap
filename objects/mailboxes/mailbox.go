@@ -1,4 +1,4 @@
-package objects
+package mailboxes
 
 import (
 	"github.com/google/uuid"

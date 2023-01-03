@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/cwinters8/gomap/client"
-	"github.com/cwinters8/gomap/objects"
+	"github.com/cwinters8/gomap/objects/emails"
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/results"
 	"github.com/cwinters8/gomap/utils"
@@ -58,7 +58,7 @@ func TestSendRequest(t *testing.T) {
 			}
 		}
 	})
-	t.Run("set", func(t *testing.T) {
+	t.Run("set and get", func(t *testing.T) {
 		query, err := requests.NewQuery(c.Session.PrimaryAccounts.Mail, "Mailbox", "Drafts")
 		if err != nil {
 			t.Fatalf("failed to instantiate new Query: %s", err.Error())
@@ -71,23 +71,23 @@ func TestSendRequest(t *testing.T) {
 		if !ok {
 			t.Fatalf("failed to cast result to Query. %s", utils.Describe(resp.Results[0]))
 		}
-		wantEmail := objects.Email{
+		wantEmail := emails.Email{
 			MailboxIDs: q.Body.IDs,
-			From: &objects.Address{
+			From: &emails.Address{
 				Name:  "Gopher Clark",
 				Email: "dev@clarkwinters.com",
 			},
-			To: []*objects.Address{{
+			To: []*emails.Address{{
 				Name:  "Request the Setter",
 				Email: "tester@clarkwinters.com",
 			}},
 			Subject: "requesting email/set",
-			Body: &objects.Body{
-				Type:  objects.TextPlain,
+			Body: &emails.Body{
+				Type:  emails.TextPlain,
 				Value: "attempt to create a new draft email",
 			},
 		}
-		email, err := objects.NewEmail(
+		email, err := emails.NewEmail(
 			wantEmail.MailboxIDs,
 			wantEmail.From,
 			wantEmail.To,
@@ -113,7 +113,7 @@ func TestSendRequest(t *testing.T) {
 		if s.Body.Created == nil {
 			t.Fatalf("Body.Created is nil. remaining Body attributes: %v", *s.Body)
 		}
-		cases := utils.Cases{
+		fatals := utils.Cases{
 			utils.NewCase(
 				s.Body.Created.ID == uuid.Nil,
 				"wanted Body.Created.ID to be a non-nil uuid; got nil value",
@@ -123,6 +123,35 @@ func TestSendRequest(t *testing.T) {
 				"wanted Body.NotCreated to be nil; got %v",
 				s.Body.NotCreated,
 			),
+		}
+		failed := 0
+		fatals.Iterator(func(c *utils.Case) {
+			t.Error(c.Message)
+			failed++
+		})
+		if failed > 0 {
+			t.FailNow()
+		}
+
+		get, err := requests.NewGet(
+			c.Session.PrimaryAccounts.Mail,
+			"Email",
+			[]string{s.Body.Created.ServerID},
+			[]string{"from", "to", "subject"},
+		)
+		if err != nil {
+			t.Fatalf("failed to instantiate new Get")
+		}
+		getResult, err := requests.NewRequest([]requests.Call{get}).Send(c)
+		if err != nil {
+			t.Fatalf("get request failure: %s", err.Error())
+		}
+		g, ok := getResult.Results[0].(results.Get)
+		if !ok {
+			t.Fatalf("failed to cast result to Get. %s", utils.Describe(getResult.Results[0]))
+		}
+		cases := utils.Cases{
+			utils.NewCase(),
 		}
 		cases.Iterator(func(c *utils.Case) {
 			t.Error(c.Message)
