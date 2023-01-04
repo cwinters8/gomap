@@ -33,7 +33,7 @@ func TestNewClient(t *testing.T) {
 	}
 
 	errors := []*utils.Case{{
-		Check:   client.HTTPClient == nil,
+		Check:   client.HttpClient == nil,
 		Message: "http client should not be nil",
 	}, {
 		Check:   client.Session.APIURL != wantURL,

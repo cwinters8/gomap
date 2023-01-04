@@ -10,14 +10,14 @@ import (
 
 type Client struct {
 	Session    *Session
-	HTTPClient *http.Client
+	HttpClient *http.Client
 	token      string
 }
 
 func NewClient(sessionURL string, bearerToken string) (*Client, error) {
 	c := Client{
 		token:      bearerToken,
-		HTTPClient: http.DefaultClient,
+		HttpClient: http.DefaultClient,
 	}
 	// get session
 	status, body, err := c.HttpRequest(http.MethodGet, sessionURL, nil)
@@ -70,7 +70,7 @@ func (c *Client) HttpRequest(method string, url string, body []byte) (int, []byt
 			"application/json",
 		},
 	}
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.HttpClient.Do(req)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if resp != nil && resp.StatusCode > 0 {

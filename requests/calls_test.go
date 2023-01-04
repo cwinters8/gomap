@@ -22,10 +22,7 @@ func TestCallMarshal(t *testing.T) {
 		Arguments: map[string]any{
 			"hello": "world",
 		},
-		OnSuccess: func(b []byte) error {
-			return nil
-		},
-		OnError: func(err error) error {
+		OnSuccess: func(b map[string]any) error {
 			return nil
 		},
 	}

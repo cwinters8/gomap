@@ -1,7 +1,6 @@
 package mailboxes
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/cwinters8/gomap/requests"
@@ -29,16 +28,16 @@ func (m *Mailbox) Query(acctID string) (*requests.Call, error) {
 				"name": m.Name,
 			},
 		},
-		OnSuccess: func(b []byte) error {
-			var gotMap map[string]any
-			if err := json.Unmarshal(b, &gotMap); err != nil {
-				return fmt.Errorf("failed to unmarshal response body to map: %w", err)
-			}
-			ids, ok := gotMap["ids"].([]string)
+		OnSuccess: func(gotMap map[string]any) error {
+			ids, ok := gotMap["ids"].([]any)
 			if !ok {
-				return fmt.Errorf("failed to cast ids to slice of string. %s", utils.Describe(gotMap["ids"]))
+				return fmt.Errorf("failed to cast ids to slice of any. %s", utils.Describe(gotMap["ids"]))
 			}
-			m.ID = ids[0]
+			strID, ok := ids[0].(string)
+			if !ok {
+				return fmt.Errorf("failed to cast id to string. %s", utils.Describe(ids[0]))
+			}
+			m.ID = strID
 			return nil
 		},
 	}, nil

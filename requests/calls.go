@@ -11,8 +11,8 @@ type Call struct {
 	AccountID string
 	Method    string
 	Arguments map[string]any
-	OnSuccess func([]byte) error
-	OnError   func(error) error
+	OnSuccess func(map[string]any) error
+	// OnError   func(error) error
 }
 
 func (c Call) MarshalJSON() ([]byte, error) {
