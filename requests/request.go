@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/cwinters8/gomap/client"
-	"github.com/cwinters8/gomap/results"
 	"github.com/cwinters8/gomap/utils"
 )
 
@@ -32,7 +31,7 @@ func (r *Request) UseSubmission() {
 	r.Using = append(r.Using, UsingSubmission)
 }
 
-func (r *Request) Send(c *client.Client) (*results.Results, error) {
+func (r *Request) Send(c *client.Client) ([]byte, error) {
 	b, err := json.Marshal(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal json from request: %w", err)
@@ -51,12 +50,5 @@ func (r *Request) Send(c *client.Client) (*results.Results, error) {
 			fmt.Printf("warning: failed to write json response to file: %s\n", err.Error())
 		}
 	}
-	var results results.Results
-	if err := json.Unmarshal(body, &results); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
-	}
-	if len(results.Errors) > 0 {
-		return nil, fmt.Errorf("found method errors: `%s`", utils.Prettier(results.Errors))
-	}
-	return &results, nil
+	return body, nil
 }
