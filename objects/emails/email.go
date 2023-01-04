@@ -1,8 +1,12 @@
 package emails
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
+	"github.com/cwinters8/gomap/utils"
 	"github.com/google/uuid"
 )
 
@@ -74,6 +78,79 @@ func (e Email) Map() map[uuid.UUID]map[string]any {
 			},
 		},
 	}
+}
+
+func (e *Email) UnmarshalJSON(b []byte) error {
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return fmt.Errorf("failed to unmarshal email: %w", err)
+	}
+	id, ok := m["id"].(string)
+	if !ok {
+		return fmt.Errorf("failed to cast id to string. %s", utils.Describe(m["id"]))
+	}
+	e.ID = id
+	subject, ok := m["subject"].(string)
+	if !ok {
+		return fmt.Errorf("failed to cast subject to string. %s", utils.Describe(m["subject"]))
+	}
+	e.Subject = subject
+	boxIDs, ok := m["mailboxIds"].(map[string]bool)
+	if !ok {
+		return fmt.Errorf("failed to cast mailbox IDs to map. %s", utils.Describe(m["mailboxIds"]))
+	}
+	boxes := []string{}
+	for k, v := range boxIDs {
+		if v {
+			boxes = append(boxes, k)
+		}
+	}
+	e.MailboxIDs = boxes
+	rawTo, ok := m["to"].([]map[string]string)
+	if !ok {
+		return fmt.Errorf("failed to cast `to` to slice of maps. %s", utils.Describe(m["to"]))
+	}
+	to := []*Address{}
+	for _, addr := range rawTo {
+		to = append(to, parseAddress(addr))
+	}
+	e.To = to
+	rawFrom, ok := m["from"].([]map[string]string)
+	if !ok {
+		return fmt.Errorf("failed to cast `from` to slice of maps. %s", utils.Describe(m["from"]))
+	}
+	e.From = parseAddress(rawFrom[0])
+	rawBody, ok := m["bodyValues"].(map[string]map[string]any)
+	if !ok {
+		return fmt.Errorf("failed to cast body to map of maps. %s", utils.Describe(m["bodyValues"]))
+	}
+	values := []string{}
+	for k, v := range rawBody {
+		key, err := strconv.Atoi(k)
+		if err != nil {
+			return fmt.Errorf("failed to convert `%s` to int: %w", k, err)
+		}
+		val, ok := v["value"].(string)
+		if !ok {
+			return fmt.Errorf("failed to cast value to string. %s", utils.Describe(v["value"]))
+		}
+		values[key-1] = val
+	}
+	e.Body.Value = strings.Join(values, " ")
+	return nil
+}
+
+func parseAddress(m map[string]string) *Address {
+	a := Address{}
+	for k, v := range m {
+		switch k {
+		case "name":
+			a.Name = v
+		case "email":
+			a.Email = v
+		}
+	}
+	return &a
 }
 
 type Address struct {

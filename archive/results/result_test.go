@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/cwinters8/gomap/client"
-	"github.com/cwinters8/gomap/objects"
+	"github.com/cwinters8/gomap/objects/emails"
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/results"
 	"github.com/cwinters8/gomap/utils"
@@ -96,7 +96,7 @@ func TestRequestResults(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to instantiate new query: %s", err.Error())
 		}
-		resp, err := requests.NewRequest([]requests.Call{query}).Send(c)
+		resp, err := requests.NewRequest([]requests.Call{query}).SendAndParse(c)
 		if err != nil {
 			t.Fatalf("request failure: %s", err.Error())
 		}
@@ -149,7 +149,7 @@ func TestRequestResults(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to instantiate new query: %s", err.Error())
 		}
-		resp, err := requests.NewRequest([]requests.Call{query}).Send(c)
+		resp, err := requests.NewRequest([]requests.Call{query}).SendAndParse(c)
 		if err != nil {
 			t.Fatalf("request failure: %s", err.Error())
 		}
@@ -157,18 +157,18 @@ func TestRequestResults(t *testing.T) {
 		if !ok {
 			t.Fatalf("failed to case result to Query. %s", utils.Describe(resp.Results[0]))
 		}
-		email, err := objects.NewEmail(
+		email, err := emails.NewEmail(
 			[]string{result.Body.IDs[0]},
-			&objects.Address{
+			&emails.Address{
 				Name:  "Gopher Clark",
 				Email: "dev@clarkwinters.com",
-			}, []*objects.Address{{
+			}, []*emails.Address{{
 				Name:  "Setter Tester",
 				Email: "tester@clarkwinters.com",
 			}},
 			"hope this works",
 			"trying to parse result of set request to json",
-			objects.TextPlain,
+			emails.TextPlain,
 		)
 		if err != nil {
 			t.Fatalf("failed to instantiate new email: %s", err.Error())
@@ -178,7 +178,7 @@ func TestRequestResults(t *testing.T) {
 			t.Fatalf("failed to instantiate new set: %s", err.Error())
 		}
 		req := requests.NewRequest([]requests.Call{set})
-		got, err := req.Send(c)
+		got, err := req.SendAndParse(c)
 		if err != nil {
 			t.Fatalf("request failed: %s", err.Error())
 		}

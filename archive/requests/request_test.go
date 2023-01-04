@@ -27,7 +27,7 @@ func TestSendRequest(t *testing.T) {
 			t.Fatalf("failed to instantiate new Query: %s", err.Error())
 		}
 		req := requests.NewRequest([]requests.Call{query})
-		resp, err := req.Send(c)
+		resp, err := req.SendAndParse(c)
 		if err != nil {
 			t.Fatalf("failed to send request: %s", err.Error())
 		}
@@ -63,7 +63,7 @@ func TestSendRequest(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to instantiate new Query: %s", err.Error())
 		}
-		resp, err := requests.NewRequest([]requests.Call{query}).Send(c)
+		resp, err := requests.NewRequest([]requests.Call{query}).SendAndParse(c)
 		if err != nil {
 			t.Fatalf("request failure: %s", err.Error())
 		}
@@ -102,7 +102,7 @@ func TestSendRequest(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to instantiate new set: %s", err.Error())
 		}
-		result, err := requests.NewRequest([]requests.Call{set}).Send(c)
+		result, err := requests.NewRequest([]requests.Call{set}).SendAndParse(c)
 		if err != nil {
 			t.Fatalf("request failure: %s", err.Error())
 		}
@@ -142,16 +142,51 @@ func TestSendRequest(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to instantiate new Get")
 		}
-		getResult, err := requests.NewRequest([]requests.Call{get}).Send(c)
+		getResult, err := requests.NewRequest([]requests.Call{get}).SendAndParse(c)
 		if err != nil {
 			t.Fatalf("get request failure: %s", err.Error())
 		}
-		g, ok := getResult.Results[0].(results.Get)
+		g, ok := getResult.Results[0].(*emails.Result)
 		if !ok {
-			t.Fatalf("failed to cast result to Get. %s", utils.Describe(getResult.Results[0]))
+			t.Fatalf("failed to cast result to emails.Result. %s", utils.Describe(getResult.Results[0]))
 		}
+		gotMethod, err := g.Method()
+		if err != nil {
+			t.Fatalf("failed to get method: %s", err.Error())
+		}
+		wantMethod := "Email/get"
+		gotEmail := g.Body.List[0]
 		cases := utils.Cases{
-			utils.NewCase(),
+			utils.NewCase(
+				gotMethod != wantMethod,
+				"wanted method %s; got %s",
+				wantMethod, gotMethod,
+			),
+			utils.NewCase(
+				g.Body.AccountID != c.Session.PrimaryAccounts.Mail,
+				"wanted account id %s; got %s",
+				c.Session.PrimaryAccounts.Mail, g.Body.AccountID,
+			),
+			utils.NewCase(
+				gotEmail.ID != s.Body.Created.ServerID,
+				"wanted email id %s; got %s",
+				s.Body.Created.ServerID, gotEmail.ID,
+			),
+			utils.NewCase(
+				gotEmail.Subject != wantEmail.Subject,
+				"wanted subject %s; got %s",
+				wantEmail.Subject, gotEmail.Subject,
+			),
+			utils.NewCase(
+				gotEmail.Body.Value != wantEmail.Body.Value,
+				"wanted body value %s; got %s",
+				wantEmail.Body.Value, gotEmail.Body.Value,
+			),
+			utils.NewCase(
+				gotEmail.Body.Type != wantEmail.Body.Type,
+				"wanted body type %s; got %s",
+				wantEmail.Body.Type, gotEmail.Body.Type,
+			),
 		}
 		cases.Iterator(func(c *utils.Case) {
 			t.Error(c.Message)

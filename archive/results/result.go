@@ -117,14 +117,46 @@ func (r *Results) UnmarshalJSON(b []byte) error {
 					ID:     id,
 					Prefix: methodTypes[0],
 				}
+			case "get":
+				result = &Get{
+					ID:     id,
+					Prefix: methodTypes[0],
+				}
 			default:
 				return fmt.Errorf("unsupported action `%s`", action)
 			}
 			if err := result.Parse(resp[1]); err != nil {
-				return fmt.Errorf("failed to parse set body: %w", err)
+				return fmt.Errorf("failed to parse body: %w", err)
 			}
 			r.Results = append(r.Results, result)
 		}
 	}
 	return nil
+}
+
+func parseBytes(raw any) ([]byte, error) {
+	var b []byte
+	if str, ok := raw.(string); !ok {
+		jsonBytes, err := json.Marshal(raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal raw body to json: %w", err)
+		}
+		b = jsonBytes
+	} else {
+		b = []byte(str)
+	}
+	return b, nil
+}
+func ParseBytes(raw any) ([]byte, error) {
+	var b []byte
+	if str, ok := raw.(string); !ok {
+		jsonBytes, err := json.Marshal(raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal raw body to json: %w", err)
+		}
+		b = jsonBytes
+	} else {
+		b = []byte(str)
+	}
+	return b, nil
 }

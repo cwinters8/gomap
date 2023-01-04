@@ -5,18 +5,20 @@ import (
 )
 
 type Mailbox struct {
-	ID      uuid.UUID
-	BoxName string
+	ID          string    `json:"id"`
+	RequestID   uuid.UUID `json:"-"`
+	BoxName     string    `json:"name"`
+	TotalEmails int       `json:"totalEmails"`
 }
 
-func (m Mailbox) GetID() uuid.UUID {
-	return m.ID
+func (m Mailbox) GetReqID() uuid.UUID {
+	return m.RequestID
 }
 
 func (m Mailbox) Name() string {
 	return "Mailbox"
 }
 
-func (m Mailbox) Map() map[string]any {
+func (m Mailbox) Map() map[uuid.UUID]map[string]any {
 	return nil
 }

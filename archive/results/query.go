@@ -47,17 +47,3 @@ type QueryBody struct {
 type Filter struct {
 	Name string `json:"name"`
 }
-
-func parseBytes(raw any) ([]byte, error) {
-	var b []byte
-	if str, ok := raw.(string); !ok {
-		jsonBytes, err := json.Marshal(raw)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal raw body to json: %w", err)
-		}
-		b = jsonBytes
-	} else {
-		b = []byte(str)
-	}
-	return b, nil
-}
