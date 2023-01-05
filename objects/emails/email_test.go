@@ -60,5 +60,4 @@ func TestEmailSet(t *testing.T) {
 	if len(e.ID) < 1 {
 		t.Error("wanted non-empty email id")
 	}
-	// TODO: make Email/get request with returned id to validate email was created with the correct properties
 }
