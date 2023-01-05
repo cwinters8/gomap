@@ -5,6 +5,7 @@ import (
 
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/utils"
+
 	"github.com/google/uuid"
 )
 
@@ -17,6 +18,10 @@ type Email struct {
 	To         []*Address `json:"to"`
 	Subject    string     `json:"subject"`
 	Body       *Body
+}
+type Address struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 type Body struct {
 	ID    uuid.UUID
@@ -114,9 +119,4 @@ func (e *Email) Set(acctID string) (*requests.Call, error) {
 			return nil
 		},
 	}, nil
-}
-
-type Address struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
 }
