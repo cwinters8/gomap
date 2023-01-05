@@ -1,36 +1,49 @@
 package emails
 
 import (
-	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 
+	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/utils"
 	"github.com/google/uuid"
 )
 
 type Email struct {
-	ID         string
-	RequestID  uuid.UUID
-	MailboxIDs []string
-	Keywords   *Keywords
-	From       *Address
-	To         []*Address
-	Subject    string
+	ID         string     `json:"id"`
+	RequestID  uuid.UUID  `json:"-"`
+	MailboxIDs []string   `json:"mailboxIds"`
+	Keywords   *Keywords  `json:"keywords"`
+	From       []*Address `json:"from"`
+	To         []*Address `json:"to"`
+	Subject    string     `json:"subject"`
 	Body       *Body
 }
+type Body struct {
+	ID    uuid.UUID
+	Type  BodyType
+	Value string
+}
+type Keywords struct {
+	Seen  bool `json:"$seen"`
+	Draft bool `json:"$draft"`
+}
+type BodyType string
 
-func NewEmail(boxIDs []string, from *Address, to []*Address, subject, body string, bodyType BodyType) (Email, error) {
+const (
+	TextPlain BodyType = "text/plain"
+	TextHTML  BodyType = "text/html"
+)
+
+func NewEmail(boxIDs []string, from []*Address, to []*Address, subject, body string, bodyType BodyType) (*Email, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
-		return NilEmail, fmt.Errorf("failed to generate new uuid: %w", err)
+		return nil, fmt.Errorf("failed to generate new uuid: %w", err)
 	}
 	bodyID, err := uuid.NewRandom()
 	if err != nil {
-		return NilEmail, fmt.Errorf("failed to generate new uuid for body: %w", err)
+		return nil, fmt.Errorf("failed to generate new uuid for body: %w", err)
 	}
-	return Email{
+	return &Email{
 		RequestID:  id,
 		MailboxIDs: boxIDs,
 		Keywords: &Keywords{
@@ -48,133 +61,62 @@ func NewEmail(boxIDs []string, from *Address, to []*Address, subject, body strin
 	}, nil
 }
 
-func (e Email) GetReqID() uuid.UUID {
-	return e.RequestID
-}
-
-func (e Email) Name() string {
-	return "Email"
-}
-
-func (e Email) Map() map[uuid.UUID]map[string]any {
-	boxes := map[string]bool{}
-	for _, m := range e.MailboxIDs {
-		boxes[m] = true
+func (e *Email) Set(acctID string) (*requests.Call, error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate new uuid: %w", err)
 	}
-	return map[uuid.UUID]map[string]any{
-		e.RequestID: {
-			"mailboxIds": boxes,
-			"from":       []*Address{e.From},
-			"to":         e.To,
-			"subject":    e.Subject,
-			"bodyStructure": map[string]any{
-				"partId": e.Body.ID,
-				"type":   e.Body.Type,
-			},
-			"bodyValues": map[uuid.UUID]map[string]string{
-				e.Body.ID: {
-					"value": e.Body.Value,
+	reqID, err := uuid.NewRandom()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate new uuid: %w", err)
+	}
+	mailboxes := map[string]bool{}
+	for _, box := range e.MailboxIDs {
+		mailboxes[box] = true
+	}
+	return &requests.Call{
+		ID:        id,
+		AccountID: acctID,
+		Method:    "Email/set",
+		Arguments: map[string]any{
+			"create": map[string]map[string]any{
+				reqID.String(): {
+					"mailboxIds": mailboxes,
+					"from":       e.From,
+					"to":         e.To,
+					"subject":    e.Subject,
+					"bodyStructure": map[string]string{
+						"partId": e.Body.ID.String(),
+						"type":   string(e.Body.Type),
+					},
+					"bodyValues": map[string]map[string]string{
+						e.Body.ID.String(): {
+							"value": e.Body.Value,
+						},
+					},
 				},
 			},
 		},
-	}
-}
-
-func (e *Email) UnmarshalJSON(b []byte) error {
-	var m map[string]any
-	if err := json.Unmarshal(b, &m); err != nil {
-		return fmt.Errorf("failed to unmarshal email: %w", err)
-	}
-	id, ok := m["id"].(string)
-	if !ok {
-		return fmt.Errorf("failed to cast id to string. %s", utils.Describe(m["id"]))
-	}
-	e.ID = id
-	subject, ok := m["subject"].(string)
-	if !ok {
-		return fmt.Errorf("failed to cast subject to string. %s", utils.Describe(m["subject"]))
-	}
-	e.Subject = subject
-	boxIDs, ok := m["mailboxIds"].(map[string]bool)
-	if !ok {
-		return fmt.Errorf("failed to cast mailbox IDs to map. %s", utils.Describe(m["mailboxIds"]))
-	}
-	boxes := []string{}
-	for k, v := range boxIDs {
-		if v {
-			boxes = append(boxes, k)
-		}
-	}
-	e.MailboxIDs = boxes
-	rawTo, ok := m["to"].([]map[string]string)
-	if !ok {
-		return fmt.Errorf("failed to cast `to` to slice of maps. %s", utils.Describe(m["to"]))
-	}
-	to := []*Address{}
-	for _, addr := range rawTo {
-		to = append(to, parseAddress(addr))
-	}
-	e.To = to
-	rawFrom, ok := m["from"].([]map[string]string)
-	if !ok {
-		return fmt.Errorf("failed to cast `from` to slice of maps. %s", utils.Describe(m["from"]))
-	}
-	e.From = parseAddress(rawFrom[0])
-	rawBody, ok := m["bodyValues"].(map[string]map[string]any)
-	if !ok {
-		return fmt.Errorf("failed to cast body to map of maps. %s", utils.Describe(m["bodyValues"]))
-	}
-	values := []string{}
-	for k, v := range rawBody {
-		key, err := strconv.Atoi(k)
-		if err != nil {
-			return fmt.Errorf("failed to convert `%s` to int: %w", k, err)
-		}
-		val, ok := v["value"].(string)
-		if !ok {
-			return fmt.Errorf("failed to cast value to string. %s", utils.Describe(v["value"]))
-		}
-		values[key-1] = val
-	}
-	e.Body.Value = strings.Join(values, " ")
-	return nil
-}
-
-func parseAddress(m map[string]string) *Address {
-	a := Address{}
-	for k, v := range m {
-		switch k {
-		case "name":
-			a.Name = v
-		case "email":
-			a.Email = v
-		}
-	}
-	return &a
+		OnSuccess: func(m map[string]any) error {
+			created, ok := m["created"].(map[string]any)
+			if !ok {
+				return fmt.Errorf("failed to cast created value to map. %s", utils.Describe(m["created"]))
+			}
+			value, ok := created[reqID.String()].(map[string]any)
+			if !ok {
+				return fmt.Errorf("failed to cast result value to map. %s", err.Error())
+			}
+			resultID, ok := value["id"].(string)
+			if !ok {
+				return fmt.Errorf("failed to cast id to string. %s", err.Error())
+			}
+			e.ID = resultID
+			return nil
+		},
+	}, nil
 }
 
 type Address struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
-
-type Body struct {
-	ID    uuid.UUID
-	Type  BodyType
-	Value string
-}
-
-type Keywords struct {
-	Seen  bool `json:"$seen"`
-	Draft bool `json:"$draft"`
-}
-
-type BodyType string
-
-const (
-	TextPlain BodyType = "text/plain"
-	TextHTML  BodyType = "text/html"
-)
-
-// empty instance of Email struct
-var NilEmail = Email{}

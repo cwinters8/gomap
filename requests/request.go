@@ -63,7 +63,6 @@ Responses:
 		}
 		for _, c := range calls {
 			if c.ID.String() == idStr && c.Method == method {
-
 				if err := c.OnSuccess(body); err != nil {
 					return fmt.Errorf("call to OnSuccess failed: %w", err)
 				}
