@@ -5,6 +5,7 @@ import (
 
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/utils"
+
 	"github.com/google/uuid"
 )
 

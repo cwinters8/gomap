@@ -11,8 +11,9 @@ import (
 	"github.com/cwinters8/gomap/utils"
 )
 
+const envPath = "../../.env"
+
 func TestEmailSet(t *testing.T) {
-	envPath := "../../.env"
 	if err := utils.Env(envPath); err != nil {
 		t.Fatalf("failed to load env variables from `%s`: %s", envPath, err.Error())
 	}
