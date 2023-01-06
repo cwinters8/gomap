@@ -25,7 +25,7 @@ func TestRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to construct new mailbox query: %s", err.Error())
 	}
-	if err := requests.Request(c, []*requests.Call{call}, false); err != nil {
+	if _, err := requests.Request(c, []*requests.Call{call}, false); err != nil {
 		t.Fatalf("request failure: %s", err.Error())
 	}
 	wantID := os.Getenv("FASTMAIL_INBOX_ID")

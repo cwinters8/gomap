@@ -28,7 +28,7 @@ func TestEmailSet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to construct new query call: %s", err.Error())
 	}
-	if err := requests.Request(c, []*requests.Call{boxCall}, false); err != nil {
+	if _, err := requests.Request(c, []*requests.Call{boxCall}, false); err != nil {
 		t.Fatalf("mailbox query request failure: %s", err.Error())
 	}
 	if len(m.ID) < 1 {
@@ -55,7 +55,7 @@ func TestEmailSet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to construct set call: %s", err.Error())
 	}
-	if err := requests.Request(c, []*requests.Call{call}, false); err != nil {
+	if _, err := requests.Request(c, []*requests.Call{call}, false); err != nil {
 		t.Fatalf("email set request failure: %s", err.Error())
 	}
 	if len(e.ID) < 1 {

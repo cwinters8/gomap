@@ -25,7 +25,7 @@ func TestEmailGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to construct new call for Email/get: %s", err.Error())
 	}
-	if err := requests.Request(c, []*requests.Call{call}, false); err != nil {
+	if _, err := requests.Request(c, []*requests.Call{call}, false); err != nil {
 		t.Fatalf("Email/get request failure: %s", err.Error())
 	}
 	want := emails.Email{

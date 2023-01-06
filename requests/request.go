@@ -10,7 +10,7 @@ import (
 	"github.com/cwinters8/gomap/utils"
 )
 
-func Request(c *client.Client, calls []*Call, usingSubmission bool) error {
+func Request(c *client.Client, calls []*Call, usingSubmission bool) (*Response, error) {
 	using := []Capability{UsingCore, UsingMail}
 	if usingSubmission {
 		using = append(using, UsingSubmission)
@@ -21,11 +21,11 @@ func Request(c *client.Client, calls []*Call, usingSubmission bool) error {
 	}
 	b, err := json.Marshal(r)
 	if err != nil {
-		return fmt.Errorf("failed to marshal request to json: %w", err)
+		return nil, fmt.Errorf("failed to marshal request to json: %w", err)
 	}
 	status, result, err := c.HttpRequest(http.MethodPost, c.Session.APIURL, b)
 	if err != nil {
-		return fmt.Errorf("status %d - http request failure: %w", status, err)
+		return nil, fmt.Errorf("status %d - http request failure: %w", status, err)
 	}
 	if os.Getenv("REQUEST_DEBUG") == "true" {
 		// write raw json to file to allow for examination of full request and response
@@ -37,24 +37,24 @@ func Request(c *client.Client, calls []*Call, usingSubmission bool) error {
 			fmt.Printf("warning: failed to write json response to file: %s\n", err.Error())
 		}
 	}
-	var resp Resp
+	var resp Response
 	if err := json.Unmarshal(result, &resp); err != nil {
-		return fmt.Errorf("failed to unmarshal response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 	errs := []map[string]any{}
 Responses:
 	for _, r := range resp.MethodResponses {
 		method, ok := r[0].(string)
 		if !ok {
-			return fmt.Errorf("failed to cast method as string. %s", utils.Describe(r[0]))
+			return nil, fmt.Errorf("failed to cast method as string. %s", utils.Describe(r[0]))
 		}
 		body, ok := r[1].(map[string]any)
 		if !ok {
-			return fmt.Errorf("failed to cast response body to map. %s", utils.Describe(r[1]))
+			return nil, fmt.Errorf("failed to cast response body to map. %s", utils.Describe(r[1]))
 		}
 		idStr, ok := r[2].(string)
 		if !ok {
-			return fmt.Errorf("failed to cast id to string. %s", utils.Describe(r[2]))
+			return nil, fmt.Errorf("failed to cast id to string. %s", utils.Describe(r[2]))
 		}
 		if method == "error" {
 			body["id"] = idStr
@@ -64,16 +64,16 @@ Responses:
 		for _, c := range calls {
 			if c.ID.String() == idStr && c.Method == method {
 				if err := c.OnSuccess(body); err != nil {
-					return fmt.Errorf("call to OnSuccess failed: %w", err)
+					return nil, fmt.Errorf("call to OnSuccess failed: %w", err)
 				}
 				continue Responses
 			}
 		}
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("found method errors: %v", errs)
+		return nil, fmt.Errorf("found method errors: %v", errs)
 	}
-	return nil
+	return &resp, nil
 }
 
 type Req struct {
@@ -81,6 +81,6 @@ type Req struct {
 	Calls []*Call      `json:"methodCalls"`
 }
 
-type Resp struct {
+type Response struct {
 	MethodResponses [][3]any `json:"methodResponses"`
 }
