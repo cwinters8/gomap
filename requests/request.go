@@ -8,9 +8,10 @@ import (
 
 	"github.com/cwinters8/gomap/client"
 	"github.com/cwinters8/gomap/utils"
+	"github.com/google/uuid"
 )
 
-func Request(c *client.Client, calls []*Call, usingSubmission bool) (*Response, error) {
+func Request(c *client.Client, calls []*Call, usingSubmission bool) ([]*Response, error) {
 	using := []Capability{UsingCore, UsingMail}
 	if usingSubmission {
 		using = append(using, UsingSubmission)
@@ -37,11 +38,12 @@ func Request(c *client.Client, calls []*Call, usingSubmission bool) (*Response, 
 			fmt.Printf("warning: failed to write json response to file: %s\n", err.Error())
 		}
 	}
-	var resp Response
+	var resp Resp
 	if err := json.Unmarshal(result, &resp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 	errs := []map[string]any{}
+	responses := []*Response{}
 Responses:
 	for _, r := range resp.MethodResponses {
 		method, ok := r[0].(string)
@@ -61,6 +63,15 @@ Responses:
 			errs = append(errs, body)
 			continue
 		}
+		parsedID, err := uuid.Parse(idStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse uuid from `%s`: %w", idStr, err)
+		}
+		responses = append(responses, &Response{
+			ID:     parsedID,
+			Method: method,
+			Body:   body,
+		})
 		for _, c := range calls {
 			if c.ID.String() == idStr && c.Method == method {
 				if err := c.OnSuccess(body); err != nil {
@@ -73,7 +84,7 @@ Responses:
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("found method errors: %v", errs)
 	}
-	return &resp, nil
+	return responses, nil
 }
 
 type Req struct {
@@ -81,6 +92,12 @@ type Req struct {
 	Calls []*Call      `json:"methodCalls"`
 }
 
-type Response struct {
+type Resp struct {
 	MethodResponses [][3]any `json:"methodResponses"`
+}
+
+type Response struct {
+	ID     uuid.UUID
+	Method string
+	Body   map[string]any
 }
