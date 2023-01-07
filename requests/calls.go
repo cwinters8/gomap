@@ -20,8 +20,3 @@ func (c Call) MarshalJSON() ([]byte, error) {
 	slice := [3]any{c.Method, c.Arguments, c.ID}
 	return json.Marshal(slice)
 }
-
-func MarshalCall(id uuid.UUID, method string, body map[string]any) ([]byte, error) {
-	s := [3]any{method, body, id}
-	return json.Marshal(s)
-}
