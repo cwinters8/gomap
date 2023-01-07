@@ -44,7 +44,6 @@ func Request(c *client.Client, calls []*Call, usingSubmission bool) ([]*Response
 	}
 	errs := []map[string]any{}
 	responses := []*Response{}
-Responses:
 	for _, r := range resp.MethodResponses {
 		method, ok := r[0].(string)
 		if !ok {
@@ -74,10 +73,12 @@ Responses:
 		})
 		for _, c := range calls {
 			if c.ID.String() == idStr && c.Method == method {
-				if err := c.OnSuccess(body); err != nil {
-					return nil, fmt.Errorf("call to OnSuccess failed: %w", err)
+				if c.OnSuccess != nil {
+					if err := c.OnSuccess(body); err != nil {
+						return nil, fmt.Errorf("call to OnSuccess failed: %w", err)
+					}
 				}
-				continue Responses
+				break
 			}
 		}
 	}

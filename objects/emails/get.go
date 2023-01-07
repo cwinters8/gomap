@@ -1,15 +1,74 @@
 package emails
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/cwinters8/gomap/client"
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/utils"
 
 	"github.com/google/uuid"
 )
+
+func GetEmails(c *client.Client, emailIDs []string) ([]*Email, error) {
+	callID, err := uuid.NewRandom()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate new uuid: %w", err)
+	}
+	call := requests.Call{
+		ID:        callID,
+		AccountID: c.Session.PrimaryAccounts.Mail,
+		Method:    "Email/get",
+		Arguments: map[string]any{
+			"ids": emailIDs,
+			"properties": []string{
+				"mailboxIds",
+				"from",
+				"to",
+				"subject",
+				"bodyValues",
+				"bodyStructure",
+			},
+			"bodyProperties":      []string{"type"},
+			"fetchTextBodyValues": true,
+			"fetchHTMLBodyValues": true,
+		},
+	}
+	responses, err := requests.Request(c, []*requests.Call{&call}, false)
+	if err != nil {
+		return nil, fmt.Errorf("request failure: %w", err)
+	}
+	resp := responses[0]
+	b, err := json.Marshal(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal response body to json: %w", err)
+	}
+	var body responseBody
+	if err := json.Unmarshal(b, &body); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
+	}
+	emails := []*Email{}
+	for _, rawEmail := range body.List {
+		emails = append(emails, &Email{
+			ID:         rawEmail.ID,
+			MailboxIDs: rawEmail.MailboxIDs.IDs,
+			From:       rawEmail.From,
+			To:         rawEmail.To,
+			Subject:    rawEmail.Subject,
+			Body: &Body{
+				Value: rawEmail.BodyValue.Value,
+				Type:  BodyType(rawEmail.BodyStructure.Type),
+			},
+		})
+	}
+	if len(body.NotFound) > 0 {
+		fmt.Printf("warning: some email IDs were not found: %v\n", body.NotFound)
+	}
+	return emails, nil
+}
 
 func (e *Email) Get(acctID string) (*requests.Call, error) {
 	if len(e.ID) < 1 {
@@ -85,7 +144,6 @@ func (e *Email) Get(acctID string) (*requests.Call, error) {
 				return fmt.Errorf("failed to cast subject to string. %s", utils.Describe(result["subject"]))
 			}
 			e.Subject = subj
-			// TODO: parse bodyValues and bodyStructure to get body value and type
 			rawBodyValues, ok := result["bodyValues"].(map[string]any)
 			if !ok {
 				return fmt.Errorf("failed to cast body values to map. %s", utils.Describe(result["bodyValues"]))
@@ -144,4 +202,67 @@ func parseAddresses(raw []any) ([]*Address, error) {
 		})
 	}
 	return addresses, nil
+}
+
+type responseBody struct {
+	List     []*result `json:"list"`
+	NotFound []string  `json:"notFound"`
+}
+
+type result struct {
+	ID            string         `json:"id"`
+	MailboxIDs    *mailboxes     `json:"mailboxIds"`
+	From          []*Address     `json:"from"`
+	To            []*Address     `json:"to"`
+	Subject       string         `json:"subject"`
+	BodyValue     *bodyValue     `json:"bodyValues"`
+	BodyStructure *bodyStructure `json:"bodyStructure"`
+}
+
+type mailboxes struct {
+	IDs []string
+}
+
+func (m *mailboxes) UnmarshalJSON(b []byte) error {
+	var raw map[string]bool
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return fmt.Errorf("failed to unmarshal mailbox ids to map: %w", err)
+	}
+	boxIDs := []string{}
+	for k, v := range raw {
+		if v {
+			boxIDs = append(boxIDs, k)
+		}
+	}
+	m.IDs = boxIDs
+	return nil
+}
+
+type bodyValue struct {
+	Value string
+}
+
+func (v *bodyValue) UnmarshalJSON(b []byte) error {
+	var raw map[string]map[string]any
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return fmt.Errorf("failed to unmarshal body values to map: %w", err)
+	}
+	values := make([]string, len(raw))
+	for k, v := range raw {
+		key, err := strconv.Atoi(k)
+		if err != nil {
+			return fmt.Errorf("failed to convert key `%s` to int: %w", k, err)
+		}
+		val, ok := v["value"].(string)
+		if !ok {
+			return fmt.Errorf("failed to cast value to string. %s", utils.Describe(v["value"]))
+		}
+		values[key-1] = val
+	}
+	v.Value = strings.Join(values, " ")
+	return nil
+}
+
+type bodyStructure struct {
+	Type string `json:"type"`
 }
