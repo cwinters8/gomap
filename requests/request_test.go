@@ -10,9 +10,11 @@ import (
 	"github.com/cwinters8/gomap/utils"
 )
 
+const envPath = "../.env"
+
 func TestRequest(t *testing.T) {
-	if err := utils.Env("../.env"); err != nil {
-		t.Fatalf("failed to load `../env`: %s", err.Error())
+	if err := utils.Env(envPath); err != nil {
+		t.Fatalf("failed to load `%s`: %s", envPath, err.Error())
 	}
 	c, err := client.NewClient(os.Getenv("FASTMAIL_SESSION_URL"), os.Getenv("FASTMAIL_TOKEN"))
 	if err != nil {
