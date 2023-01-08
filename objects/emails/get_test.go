@@ -120,9 +120,12 @@ func TestEmailGet(t *testing.T) {
 		hopeThisWorks := "M1cb24edb211ae50b4ed508ad"
 		testingSet := "Mf59d21cfc25fbde3d9676e7d"
 		emailIDs := []string{hopeThisWorks, testingSet}
-		emailList, err := emails.GetEmails(c, emailIDs)
+		emailList, notFound, err := emails.GetEmails(c, emailIDs)
 		if err != nil {
 			t.Fatalf("failed to get emails: %s", err.Error())
+		}
+		if len(notFound) > 0 {
+			t.Errorf("some email IDs were not found: %v", notFound)
 		}
 		wantFrom := []*emails.Address{{
 			Name:  "Gopher Clark",

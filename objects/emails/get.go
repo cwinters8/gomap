@@ -13,10 +13,10 @@ import (
 	"github.com/google/uuid"
 )
 
-func GetEmails(c *client.Client, emailIDs []string) ([]*Email, error) {
+func GetEmails(c *client.Client, emailIDs []string) (found []*Email, notFound []string, err error) {
 	callID, err := uuid.NewRandom()
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate new uuid: %w", err)
+		return nil, nil, fmt.Errorf("failed to generate new uuid: %w", err)
 	}
 	call := requests.Call{
 		ID:        callID,
@@ -39,19 +39,22 @@ func GetEmails(c *client.Client, emailIDs []string) ([]*Email, error) {
 	}
 	responses, err := requests.Request(c, []*requests.Call{&call}, false)
 	if err != nil {
-		return nil, fmt.Errorf("request failure: %w", err)
+		return nil, nil, fmt.Errorf("request failure: %w", err)
 	}
-	resp := responses[0]
-	b, err := json.Marshal(resp.Body)
+	return ParseRawResponseBody(responses[0].Body)
+}
+
+func ParseRawResponseBody(body map[string]any) (found []*Email, notFound []string, err error) {
+	b, err := json.Marshal(body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal response body to json: %w", err)
+		return nil, nil, fmt.Errorf("failed to marshal response body to json: %w", err)
 	}
-	var body responseBody
-	if err := json.Unmarshal(b, &body); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
+	var respBody responseBody
+	if err := json.Unmarshal(b, &respBody); err != nil {
+		return nil, nil, fmt.Errorf("failed to unmarshal response body: %w", err)
 	}
 	emails := []*Email{}
-	for _, rawEmail := range body.List {
+	for _, rawEmail := range respBody.List {
 		emails = append(emails, &Email{
 			ID:         rawEmail.ID,
 			MailboxIDs: rawEmail.MailboxIDs.IDs,
@@ -64,10 +67,7 @@ func GetEmails(c *client.Client, emailIDs []string) ([]*Email, error) {
 			},
 		})
 	}
-	if len(body.NotFound) > 0 {
-		fmt.Printf("warning: some email IDs were not found: %v\n", body.NotFound)
-	}
-	return emails, nil
+	return emails, respBody.NotFound, nil
 }
 
 func (e *Email) Get(acctID string) (*requests.Call, error) {
