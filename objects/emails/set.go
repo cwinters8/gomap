@@ -14,10 +14,6 @@ func (e *Email) Set(acctID string) (*requests.Call, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate new uuid: %w", err)
 	}
-	reqID, err := uuid.NewRandom()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate new uuid: %w", err)
-	}
 	mailboxes := map[string]bool{}
 	for _, box := range e.MailboxIDs {
 		mailboxes[box] = true
@@ -28,7 +24,7 @@ func (e *Email) Set(acctID string) (*requests.Call, error) {
 		Method:    "Email/set",
 		Arguments: map[string]any{
 			"create": map[string]map[string]any{
-				reqID.String(): {
+				e.RequestID.String(): {
 					"mailboxIds": mailboxes,
 					"from":       e.From,
 					"to":         e.To,
@@ -50,7 +46,7 @@ func (e *Email) Set(acctID string) (*requests.Call, error) {
 			if !ok {
 				return fmt.Errorf("failed to cast created value to map. %s", utils.Describe(m["created"]))
 			}
-			value, ok := created[reqID.String()].(map[string]any)
+			value, ok := created[e.RequestID.String()].(map[string]any)
 			if !ok {
 				return fmt.Errorf("failed to cast result value to map. %s", err.Error())
 			}
