@@ -57,5 +57,9 @@ func TestSubmit(t *testing.T) {
 	if len(id) < 1 {
 		t.Fatalf("got zero-length submission id")
 	}
-	// TODO: validate email arrived where it was supposed to
+	// at this time, I'm unable to validate an email was delivered,
+	// because Fastmail seems to delete the EmailSubmission object as soon as the email is successfully sent
+	// from the jmap mail spec:
+	// > "For efficiency, a server MAY destroy EmailSubmission objects at any time after the message is successfully sent or after it has finished retrying to send the message."
+	// source: https://jmap.io/spec-mail.html#email-submission
 }
