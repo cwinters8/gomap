@@ -1,13 +1,16 @@
 package emails_test
 
 import (
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/cwinters8/gomap/client"
 	"github.com/cwinters8/gomap/objects/emails"
 	"github.com/cwinters8/gomap/objects/mailboxes"
 	"github.com/cwinters8/gomap/utils"
+	"github.com/google/uuid"
 )
 
 func TestSubmit(t *testing.T) {
@@ -23,6 +26,10 @@ func TestSubmit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to retrieve draft mailbox: %s", err.Error())
 	}
+	testEmailID, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatalf("failed to generate new uuid: %s", err.Error())
+	}
 	e, err := emails.NewEmail(
 		[]string{draftBox.ID},
 		[]*emails.Address{{
@@ -34,7 +41,7 @@ func TestSubmit(t *testing.T) {
 			Email: "tester@clarkwinters.com",
 		}},
 		"testing email submission",
-		"hello from TestSubmit!",
+		fmt.Sprintf("hello from TestSubmit!\ntest id: %s", testEmailID.String()),
 		emails.TextPlain,
 	)
 	if err != nil {
@@ -57,9 +64,56 @@ func TestSubmit(t *testing.T) {
 	if len(id) < 1 {
 		t.Fatalf("got zero-length submission id")
 	}
-	// at this time, I'm unable to validate an email was delivered,
-	// because Fastmail seems to delete the EmailSubmission object as soon as the email is successfully sent
-	// from the jmap mail spec:
-	// > "For efficiency, a server MAY destroy EmailSubmission objects at any time after the message is successfully sent or after it has finished retrying to send the message."
-	// source: https://jmap.io/spec-mail.html#email-submission
+	// retrieve the email from the mailbox it should have landed in
+	boxName := "🧪-tester"
+	box, err := mailboxes.GetMailboxByName(c, boxName)
+	if err != nil {
+		t.Fatalf("failed to retrieve mailbox `%s`: %s", boxName, err.Error())
+	}
+	attempts := 30
+	gotID := ""
+	for attempts > 0 {
+		emailIDs, err := emails.Query(c, testEmailID.String(), box.ID)
+		if err != nil {
+			t.Fatalf("email query failed: %s", err.Error())
+		}
+		if len(emailIDs) < 1 {
+			attempts--
+			continue
+		}
+		gotID = emailIDs[0]
+		break
+	}
+	if len(gotID) < 1 {
+		t.Fatalf("email with test id `%s` not found", testEmailID.String())
+	}
+	// validate email content
+	found, _, err := emails.GetEmails(c, []string{gotID})
+	if err != nil {
+		t.Fatalf("failed to retrieve email: %s", err.Error())
+	}
+	if len(found) < 1 {
+		t.Fatalf("email id `%s` not found", gotID)
+	}
+	got := found[0]
+	cases := utils.Cases{utils.NewCase(
+		e.From[0].Email != got.From[0].Email,
+		"wanted from email `%s`; got `%s`",
+		e.From[0].Email, got.From[0].Email,
+	), utils.NewCase(
+		e.To[0].Email != got.To[0].Email,
+		"wanted to email `%s`; got `%s`",
+		e.To[0].Email, got.To[0].Email,
+	), utils.NewCase(
+		e.Subject != got.Subject,
+		"wanted subject `%s`; got `%s`",
+		e.Subject, got.Subject,
+	), utils.NewCase(
+		!strings.Contains(got.Body.Value, e.Body.Value),
+		"wanted body value `%s`; got `%s`",
+		e.Body.Value, got.Body.Value,
+	)}
+	cases.Iterator(func(c *utils.Case) {
+		t.Error(c.Message)
+	})
 }

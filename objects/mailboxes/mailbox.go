@@ -1,10 +1,10 @@
 package mailboxes
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/cwinters8/gomap/client"
+	"github.com/cwinters8/gomap/parse"
 	"github.com/cwinters8/gomap/requests"
 
 	"github.com/google/uuid"
@@ -27,28 +27,12 @@ func GetMailboxByName(c *client.Client, name string) (*Mailbox, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query request failure: %w", err)
 	}
-	ids, err := ParseQueryResponseBody(responses[0].Body)
+	ids, err := parse.QueryResponseBody(responses[0].Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse query response: %w", err)
 	}
 	m.ID = ids[0]
 	return &m, nil
-}
-
-func ParseQueryResponseBody(body map[string]any) (ids []string, err error) {
-	b, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal body to json: %w", err)
-	}
-	var resp queryResponse
-	if err := json.Unmarshal(b, &resp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal query response: %w", err)
-	}
-	return resp.IDs, nil
-}
-
-type queryResponse struct {
-	IDs []string `json:"ids"`
 }
 
 func (m *Mailbox) Query(acctID string) (*requests.Call, error) {
@@ -66,7 +50,7 @@ func (m *Mailbox) Query(acctID string) (*requests.Call, error) {
 			},
 		},
 		OnSuccess: func(gotMap map[string]any) error {
-			ids, err := ParseQueryResponseBody(gotMap)
+			ids, err := parse.QueryResponseBody(gotMap)
 			if err != nil {
 				return fmt.Errorf("failed to parse query response: %w", err)
 			}
