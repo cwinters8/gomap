@@ -11,7 +11,11 @@ import (
 )
 
 func (e *Email) Submit(c *client.Client, draftMailboxID, sentMailboxID string) (submissionID string, err error) {
-	call, err := SubmitCall(e.RequestID, c.Session.PrimaryAccounts.Mail, e.ID, draftMailboxID, sentMailboxID)
+	identityID, err := getIdentityID(c, e.From[0].Email)
+	if err != nil {
+		return "", fmt.Errorf("failed to get identity id: %w", err)
+	}
+	call, err := SubmitCall(e.RequestID, identityID, c.Session.PrimaryAccounts.Mail, e.ID, draftMailboxID, sentMailboxID)
 	if err != nil {
 		return "", fmt.Errorf("failed to construct Submit call: %w", err)
 	}
@@ -44,7 +48,7 @@ func (e *Email) Submit(c *client.Client, draftMailboxID, sentMailboxID string) (
 	return created, nil
 }
 
-func SubmitCall(requestID uuid.UUID, acctID, emailID, draftMailboxID, sentMailboxID string) (*requests.Call, error) {
+func SubmitCall(requestID uuid.UUID, identityID, acctID, emailID, draftMailboxID, sentMailboxID string) (*requests.Call, error) {
 	callID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate new uuid: %w", err)
@@ -52,7 +56,8 @@ func SubmitCall(requestID uuid.UUID, acctID, emailID, draftMailboxID, sentMailbo
 	args := map[string]any{
 		"create": map[string]map[string]string{
 			requestID.String(): {
-				"emailId": emailID,
+				"identityId": identityID,
+				"emailId":    emailID,
 			},
 		},
 	}
@@ -101,6 +106,42 @@ func ParseSubmitResponseBody(requestID uuid.UUID, body map[string]any) (createdI
 }
 
 func getIdentityID(c *client.Client, email string) (string, error) {
-	// TODO: retrieve identity id
-	return "", nil
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate new uuid: %w", err)
+	}
+	call := requests.Call{
+		ID:        id,
+		Method:    "Identity/get",
+		AccountID: c.Session.PrimaryAccounts.Mail,
+		Arguments: map[string]any{},
+	}
+	responses, err := requests.Request(c, []*requests.Call{&call}, true)
+	if err != nil {
+		return "", fmt.Errorf("request failure: %w", err)
+	}
+	b, err := json.Marshal(responses[0].Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal identity body to json: %w", err)
+	}
+	var resp identityGetResponse
+	if err := json.Unmarshal(b, &resp); err != nil {
+		return "", fmt.Errorf("failed to unmarshal identity response: %w", err)
+	}
+	for _, i := range resp.List {
+		if i.Email == email {
+			return i.ID, nil
+		}
+	}
+	return "", fmt.Errorf("failed to find email `%s` in identity list", email)
+}
+
+type identityGetResponse struct {
+	List []*identity `json:"list"`
+}
+
+type identity struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
