@@ -1,6 +1,7 @@
 package emails
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -14,7 +15,7 @@ type Email struct {
 	From       []*Address `json:"from"`
 	To         []*Address `json:"to"`
 	Subject    string     `json:"subject"`
-	Body       *Body
+	Body       *Body      `json:"-"`
 }
 type Address struct {
 	Name  string `json:"name"`
@@ -61,4 +62,27 @@ func NewEmail(boxIDs []string, from []*Address, to []*Address, subject, body str
 			Value: body,
 		},
 	}, nil
+}
+
+func (e Email) MarshalJSON() ([]byte, error) {
+	mailboxes := map[string]bool{}
+	for _, box := range e.MailboxIDs {
+		mailboxes[box] = true
+	}
+	raw := map[string]any{
+		"mailboxIds": mailboxes,
+		"from":       e.From,
+		"to":         e.To,
+		"subject":    e.Subject,
+		"bodyStructure": map[string]string{
+			"partId": e.Body.ID.String(),
+			"type":   string(e.Body.Type),
+		},
+		"bodyValues": map[string]map[string]string{
+			e.Body.ID.String(): {
+				"value": e.Body.Value,
+			},
+		},
+	}
+	return json.Marshal(raw)
 }
