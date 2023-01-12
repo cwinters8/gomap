@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cwinters8/gomap/client"
 	"github.com/cwinters8/gomap/objects/emails"
@@ -70,10 +71,16 @@ func TestSubmit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to retrieve mailbox `%s`: %s", boxName, err.Error())
 	}
-	attempts := 30
+	attempts := 60
 	gotID := ""
+	strID := testEmailID.String()
+	filter := emails.Filter{
+		InMailboxID: box.ID,
+		Text:        strID,
+	}
+	time.Sleep(5 * time.Second)
 	for attempts > 0 {
-		emailIDs, err := emails.Query(c, testEmailID.String(), box.ID)
+		emailIDs, err := emails.Query(c, &filter)
 		if err != nil {
 			t.Fatalf("email query failed: %s", err.Error())
 		}

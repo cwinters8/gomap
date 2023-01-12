@@ -2,6 +2,7 @@ package emails
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/cwinters8/gomap/client"
 	"github.com/cwinters8/gomap/parse"
@@ -10,14 +11,17 @@ import (
 	"github.com/google/uuid"
 )
 
-func Query(c *client.Client, text string, inMailboxID string) (emailIDs []string, err error) {
+type Filter struct {
+	InMailboxID string     `json:"inMailbox,omitempty"`
+	Text        string     `json:"text,omitempty"`   // searches From, To, Cc, Bcc, and Subject header fields and any text/* body parts
+	Before      *time.Time `json:"before,omitempty"` // UTC timestamp the email's receivedAt must be before
+	After       *time.Time `json:"after,omitempty"`  // UTC timestamp the email's receivedAt must match or be after
+}
+
+func Query(c *client.Client, filter *Filter) (emailIDs []string, err error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate new uuid: %w", err)
-	}
-	filter := map[string]string{"text": text}
-	if len(inMailboxID) > 0 {
-		filter["inMailbox"] = inMailboxID
 	}
 	call := requests.Call{
 		ID:        id,
