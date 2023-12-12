@@ -12,7 +12,12 @@ func TestNewClient(t *testing.T) {
 	if err := utils.Env("../.env"); err != nil {
 		t.Fatalf("failed to load env: %s", err.Error())
 	}
-	client, err := gomap.NewClient(os.Getenv("FASTMAIL_SESSION_URL"), os.Getenv("FASTMAIL_TOKEN"))
+	client, err := gomap.NewClient(
+		os.Getenv("FASTMAIL_SESSION_URL"),
+		os.Getenv("FASTMAIL_TOKEN"),
+		gomap.DefaultDrafts,
+		gomap.DefaultSent,
+	)
 	if err != nil {
 		t.Fatalf("failed to instantiate new client: %s", err.Error())
 	}
