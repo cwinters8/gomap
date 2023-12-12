@@ -1,5 +1,7 @@
 # gomap
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/cwinters8/gomap.svg)](https://pkg.go.dev/github.com/cwinters8/gomap)
+
 Go module for interfacing with [JMAP](https://jmap.io) mail servers, such as [Fastmail](https://www.fastmail.com/).
 
 ## Usage
