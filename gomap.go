@@ -40,9 +40,12 @@ func NewClient(jmapSessionURL, bearerToken, draftsMailbox, sentMailbox string) (
 
 // SendEmail sends an email using the provided arguments.
 //
+// Addresses in from must be owned by the account authenticated with the Client,
+// otherwise the email will fail to send.
+//
 // Setting isHTML to true will set the body type attribute to HTML instead of plaintext.
 // This works best if body is a string that has been output from executing an html/template.
-func (c *Client) SendEmail(from, to []*emails.Address, subject, body string, isHTML bool) error {
+func (c *Client) SendEmail(from, to Addresses, subject, body string, isHTML bool) error {
 	bodyType := emails.TextPlain
 	if isHTML {
 		bodyType = emails.TextHTML
@@ -65,11 +68,12 @@ func (c *Client) SendEmail(from, to []*emails.Address, subject, body string, isH
 //
 // maxCount is used as a metric for breaking out of the query loop,
 // not a hard limit on the number of emails returned.
-func (c *Client) GetEmails(filter *emails.Filter, maxCount int, timeout time.Duration) ([]*emails.Email, error) {
+func (c *Client) GetEmails(filter *Filter, maxCount int, timeout time.Duration) ([]*emails.Email, error) {
 	var emailIDs []string
+	f := emails.Filter(*filter)
 	end := time.Now().Add(timeout)
 	for time.Now().Compare(end) < 1 {
-		newIDs, err := emails.Query(c.Client, filter)
+		newIDs, err := emails.Query(c.Client, &f)
 		if err != nil {
 			return nil, fmt.Errorf("failed to query for emails: %w", err)
 		}
@@ -98,7 +102,24 @@ func (c *Client) GetMailbox(name string) (*mailboxes.Mailbox, error) {
 	return mailboxes.GetMailboxByName(c.Client, name)
 }
 
+// NewAddress is a convenience function for creating a new *emails.Address
+func NewAddress(name, email string) *emails.Address {
+	return &emails.Address{Name: name, Email: email}
+}
+
 const (
 	DefaultDrafts = "Drafts"
 	DefaultSent   = "Sent"
 )
+
+type Addresses []*emails.Address
+type Filter emails.Filter
+
+// NewAddresses creates a new Addresses slice that can be used for sending emails
+func NewAddresses(addresses ...*emails.Address) Addresses {
+	addr := Addresses{}
+	if len(addresses) > 0 {
+		addr = append(addr, addresses...)
+	}
+	return addr
+}

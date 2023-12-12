@@ -58,12 +58,12 @@ func TestSendEmail(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("failed to execute HTML template: %v", err)
 	}
-	from := emails.Address{"Gopher Clark", "dev@clarkwinters.com"}
-	to := emails.Address{"Tester McSubmit", "tester@clarkwinters.com"}
+	from := gomap.NewAddress("Gopher Clark", "dev@clarkwinters.com")
+	to := gomap.NewAddress("Tester McSend", "tester@clarkwinters.com")
 	subject := "testing gomap.Client.SendEmail"
 	if err := c.SendEmail(
-		[]*emails.Address{&from},
-		[]*emails.Address{&to},
+		gomap.NewAddresses(from),
+		gomap.NewAddresses(to),
 		subject,
 		buf.String(),
 		true,
@@ -76,7 +76,7 @@ func TestSendEmail(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get tester mailbox: %v", err)
 	}
-	filter := emails.Filter{
+	filter := gomap.Filter{
 		InMailboxID: box.ID,
 		Text:        strEmailID,
 	}
