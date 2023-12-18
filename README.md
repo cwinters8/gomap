@@ -1,6 +1,6 @@
-# gomap
+[![Go Reference](https://pkg.go.dev/badge/github.com/cwinters8/gomap.svg)](https://pkg.go.dev/github.com/cwinters8/gomap) [![Go Report Card](https://goreportcard.com/badge/github.com/cwinters8/gomap)](https://goreportcard.com/report/github.com/cwinters8/gomap) [![License](https://img.shields.io/github/license/cwinters8/gomap?color=blue)](https://github.com/cwinters8/gomap/blob/main/LICENSE) <!-- markdownlint-disable-line MD041 -->
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/cwinters8/gomap.svg)](https://pkg.go.dev/github.com/cwinters8/gomap)
+# gomap
 
 Go module for interfacing with [JMAP](https://jmap.io) mail servers, such as [Fastmail](https://www.fastmail.com/).
 
