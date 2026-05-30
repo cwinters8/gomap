@@ -11,9 +11,33 @@ import (
 )
 
 func (e *Email) Submit(c *client.Client, draftMailboxID, sentMailboxID string) (submissionID string, err error) {
-	identityID, err := getIdentityID(c, e.From[0].Email)
+	if len(e.From) < 1 || e.From[0] == nil || len(e.From[0].Email) < 1 {
+		return "", fmt.Errorf("email must have a from address to submit")
+	}
+	return e.SubmitWithIdentityEmail(c, draftMailboxID, sentMailboxID, e.From[0].Email)
+}
+
+// SubmitWithIdentityEmail submits the Email using the Identity that matches identityEmail.
+//
+// The Email's From header and the submission Identity are separate JMAP concepts.
+// Submit uses the first From address as the identity email for backwards compatibility;
+// this method lets callers send a message whose visible From header differs from the
+// authenticated JMAP Identity, subject to the server's permission checks.
+func (e *Email) SubmitWithIdentityEmail(c *client.Client, draftMailboxID, sentMailboxID, identityEmail string) (submissionID string, err error) {
+	identityID, err := getIdentityID(c, identityEmail)
 	if err != nil {
 		return "", fmt.Errorf("failed to get identity id: %w", err)
+	}
+	return e.SubmitWithIdentityID(c, draftMailboxID, sentMailboxID, identityID)
+}
+
+// SubmitWithIdentityID submits the Email using a specific JMAP Identity id.
+//
+// JMAP requires EmailSubmission/create to include an identityId. Servers may reject
+// submissions when the Email's From header is not permitted for the selected Identity.
+func (e *Email) SubmitWithIdentityID(c *client.Client, draftMailboxID, sentMailboxID, identityID string) (submissionID string, err error) {
+	if len(identityID) < 1 {
+		return "", fmt.Errorf("identity id is required")
 	}
 	call, err := SubmitCall(e.RequestID, identityID, c.Session.PrimaryAccounts.Mail, e.ID, draftMailboxID, sentMailboxID)
 	if err != nil {
@@ -30,6 +54,11 @@ func (e *Email) Submit(c *client.Client, draftMailboxID, sentMailboxID string) (
 	if err != nil {
 		return "", fmt.Errorf("failed to parse response body: %w", err)
 	}
+	e.updateAfterSubmit(draftMailboxID, sentMailboxID)
+	return created, nil
+}
+
+func (e *Email) updateAfterSubmit(draftMailboxID, sentMailboxID string) {
 	e.Keywords.Draft = false
 	sentBoxFound := false
 	if len(draftMailboxID) > 0 {
@@ -45,7 +74,6 @@ func (e *Email) Submit(c *client.Client, draftMailboxID, sentMailboxID string) (
 	if len(sentMailboxID) > 0 && !sentBoxFound {
 		e.MailboxIDs = append(e.MailboxIDs, sentMailboxID)
 	}
-	return created, nil
 }
 
 func SubmitCall(requestID uuid.UUID, identityID, acctID, emailID, draftMailboxID, sentMailboxID string) (*requests.Call, error) {
