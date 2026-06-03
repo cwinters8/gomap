@@ -13,6 +13,10 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    env:
+      FASTMAIL_SESSION_URL: ${{ vars.FASTMAIL_SESSION_URL }}
+      FASTMAIL_TOKEN: ${{ secrets.FASTMAIL_TOKEN }}
+      BEARER_TOKEN: ${{ secrets.FASTMAIL_TOKEN }}
 
     steps:
       - name: Checkout
