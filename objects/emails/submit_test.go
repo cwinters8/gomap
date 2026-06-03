@@ -100,6 +100,70 @@ func TestSendEmail(t *testing.T) {
 	})
 }
 
+func TestSendEmailWithIdentityContactFormFrom(t *testing.T) {
+	if err := utils.Env(envPath); err != nil {
+		t.Fatalf("failed to source env variables from path `%s`: %s", envPath, err.Error())
+	}
+	c, err := gomap.NewClient(
+		os.Getenv("FASTMAIL_SESSION_URL"),
+		os.Getenv("FASTMAIL_TOKEN"),
+		gomap.DefaultDrafts,
+		gomap.DefaultSent,
+	)
+	if err != nil {
+		t.Fatalf("failed to construct new client: %v", err)
+	}
+	testEmailID, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatalf("failed to generate new uuid: %v", err)
+	}
+	strEmailID := testEmailID.String()
+	identityEmail := "dev@clarkwinters.com"
+	from := gomap.NewAddress("Contact Form Submitter", fmt.Sprintf("submitter-%s@example.com", strEmailID))
+	to := gomap.NewAddress("Tester McContact", "tester@clarkwinters.com")
+	subject := "testing gomap.Client.SendEmailWithIdentity contact form From"
+	body := fmt.Sprintf("hello from TestSendEmailWithIdentityContactFormFrom!\ntest id: %s", strEmailID)
+
+	if err := c.SendEmailWithIdentity(
+		gomap.NewAddresses(from),
+		gomap.NewAddresses(to),
+		subject,
+		body,
+		identityEmail,
+		false,
+	); err != nil {
+		t.Fatalf("failed to send email with identity %q and visible from %q: %v", identityEmail, from.Email, err)
+	}
+	time.Sleep(5 * time.Second)
+	box, err := c.GetMailbox("🧪-tester")
+	if err != nil {
+		t.Fatalf("failed to get tester mailbox: %v", err)
+	}
+	filter := gomap.Filter{
+		InMailboxID: box.ID,
+		Text:        strEmailID,
+	}
+	msgs, err := c.GetEmails(&filter, 1, 30*time.Second)
+	if err != nil {
+		t.Fatalf("failed to retrieve emails: %v", err)
+	}
+	if len(msgs) == 0 {
+		t.Fatalf("email containing ID `%s` not found", strEmailID)
+	}
+	got := msgs[0]
+	gotTo := got.To[0]
+	gotFrom := got.From[0]
+	cases := utils.Cases{
+		utils.NewCase(gotTo.Email != to.Email, "wanted to email `%s`; got `%s`", to.Email, gotTo.Email),
+		utils.NewCase(gotFrom.Email != from.Email, "wanted from email `%s`; got `%s`", from.Email, gotFrom.Email),
+		utils.NewCase(got.Subject != subject, "wanted subject `%s`; got `%s`", subject, got.Subject),
+		utils.NewCase(!strings.Contains(got.Body.Value, body), "wanted body value `%s`; got `%s`", body, got.Body.Value),
+	}
+	cases.Iterator(func(c *utils.Case) {
+		t.Error(c.Message)
+	})
+}
+
 func TestSubmit(t *testing.T) {
 	if err := utils.Env(envPath); err != nil {
 		t.Fatalf("failed to source env variables from path `%s`: %s", envPath, err.Error())
