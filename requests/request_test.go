@@ -7,6 +7,7 @@ import (
 	"github.com/cwinters8/gomap/client"
 	"github.com/cwinters8/gomap/objects/emails"
 	"github.com/cwinters8/gomap/objects/mailboxes"
+	"github.com/cwinters8/gomap/parse"
 	"github.com/cwinters8/gomap/requests"
 	"github.com/cwinters8/gomap/utils"
 )
@@ -30,12 +31,22 @@ func TestRequest(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to construct new mailbox query: %s", err.Error())
 		}
-		if _, err := requests.Request(c, []*requests.Call{call}, false); err != nil {
+		responses, err := requests.Request(c, []*requests.Call{call}, false)
+		if err != nil {
 			t.Fatalf("request failure: %s", err.Error())
 		}
-		wantID := os.Getenv("FASTMAIL_INBOX_ID")
-		if box.ID != wantID {
-			t.Errorf("wanted mailbox id %s; got %s", wantID, box.ID)
+		if len(responses) != 1 {
+			t.Fatalf("wanted 1 response; got %d", len(responses))
+		}
+		ids, err := parse.QueryResponseBody(responses[0].Body)
+		if err != nil {
+			t.Fatalf("failed to parse query response body: %s", err.Error())
+		}
+		if len(ids) == 0 {
+			t.Fatal("wanted at least 1 mailbox id")
+		}
+		if box.ID != ids[0] {
+			t.Errorf("wanted mailbox id %s; got %s", ids[0], box.ID)
 		}
 	})
 
