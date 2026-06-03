@@ -73,11 +73,15 @@ func ExampleClient_GetEmails() {
 	}
 	if len(emails) > 0 {
 		email := emails[0]
+		wantBody := fmt.Sprintf("ID: %s", strID)
 		fmt.Println("found email:")
 		fmt.Printf("\tfrom: %+v\n", *email.From[0])
 		fmt.Printf("\tto: %+v\n", *email.To[0])
 		fmt.Printf("\tsubject: %s\n", email.Subject)
-		fmt.Printf("\tbody: %s\n", email.Body.Value)
+		if email.Body.Value != wantBody {
+			log.Fatalf("retrieved email body %q does not match expected body %q", email.Body.Value, wantBody)
+		}
+		fmt.Println("\tbody: ID: <generated>")
 	}
 
 	// Output:
@@ -85,7 +89,7 @@ func ExampleClient_GetEmails() {
 	//	from: {Name:Clark Winters Email:dev@clarkwinters.com}
 	//	to: {Name:Tester Gopher Email:tester@clarkwinters.com}
 	//	subject: Hello from gomap!
-	//	body: ID: 68784752-95e1-4fc6-b923-0e84aafe1150
+	//	body: ID: <generated>
 }
 
 func TestGetEmails(t *testing.T) {
