@@ -1,0 +1,33 @@
+name: Go Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    env:
+      FASTMAIL_SESSION_URL: ${{ vars.FASTMAIL_SESSION_URL }}
+      FASTMAIL_TOKEN: ${{ secrets.FASTMAIL_TOKEN }}
+      BEARER_TOKEN: ${{ secrets.FASTMAIL_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run tests
+        run: go test ./...

@@ -46,6 +46,22 @@ func NewClient(jmapSessionURL, bearerToken, draftsMailbox, sentMailbox string) (
 // Setting isHTML to true will set the body type attribute to HTML instead of plaintext.
 // This works best if body is a string that has been output from executing an html/template.
 func (c *Client) SendEmail(from, to Addresses, subject, body string, isHTML bool) error {
+	if len(from) < 1 || from[0] == nil || len(from[0].Email) < 1 {
+		return fmt.Errorf("from must contain an email address")
+	}
+	return c.SendEmailWithIdentity(from, to, subject, body, from[0].Email, isHTML)
+}
+
+// SendEmailWithIdentity sends an email with the provided visible From header,
+// while using identityEmail to choose the JMAP Identity for the submission.
+//
+// JMAP separates the RFC 5322 From header from the submission Identity. This
+// method is useful for contact-form style messages where the visible From
+// address should be supplied by the form submitter, but the authenticated JMAP
+// account's identity must still be used for EmailSubmission/create. Servers may
+// still reject the send if the selected Identity is not allowed to use the
+// message's From header.
+func (c *Client) SendEmailWithIdentity(from, to Addresses, subject, body, identityEmail string, isHTML bool) error {
 	bodyType := emails.TextPlain
 	if isHTML {
 		bodyType = emails.TextHTML
@@ -57,7 +73,7 @@ func (c *Client) SendEmail(from, to Addresses, subject, body string, isHTML bool
 	if err := emails.Set(c.Client, []*emails.Email{email}); err != nil {
 		return fmt.Errorf("email set request failure: %w", err)
 	}
-	if _, err := email.Submit(c.Client, c.Drafts.ID, c.Sent.ID); err != nil {
+	if _, err := email.SubmitWithIdentityEmail(c.Client, c.Drafts.ID, c.Sent.ID, identityEmail); err != nil {
 		return fmt.Errorf("failed to submit email: %w", err)
 	}
 	return nil
